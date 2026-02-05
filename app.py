@@ -6,7 +6,7 @@ import streamlit as st
 import numpy as np
 import matplotlib.pyplot as plt
 import io
-
+import math
 from reportlab.lib.pagesizes import A4
 from reportlab.pdfgen import canvas
 from reportlab.lib.units import cm
@@ -75,19 +75,29 @@ if not st.session_state.auth:
 # FUNÇÕES
 # -----------------------------------------------------
 def personality_type(s):
-    if s["O"] >= 70 and s["E"] >= 60:
+
+    if max(s.values()) - min(s.values()) < 12:
+        return "Balanced", "Perfil equilibrado, sem dominância forte."
+
+    if s["O"] > 65 and s["E"] > 60:
         return "Explorer", "Curioso, inovador e orientado à exploração."
-    if s["C"] >= 70 and s["N"] <= 40:
+
+    if s["C"] > 65 and s["N"] < 45:
         return "Executor", "Focado, disciplinado e consistente."
-    if s["C"] >= 60 and s["A"] >= 60:
+
+    if s["A"] > 65 and s["C"] > 60:
         return "Diplomat", "Cooperativo, confiável e harmonizador."
+
     return "Analyst", "Reflexivo, estratégico e lógico."
 
-def percentile(v):
-    if v >= 85: return "Top 10%"
-    if v >= 70: return "Acima da média"
-    if v >= 40: return "Média"
-    return "Abaixo da média"
+
+
+
+def percentile(score, mean=50, std=15):
+    z = (score - mean) / std
+    p = 0.5 * (1 + math.erf(z / math.sqrt(2)))
+    return round(p * 100, 1)
+
 
 # -----------------------------------------------------
 # QUESTIONÁRIO
@@ -270,18 +280,17 @@ if "scores" in st.session_state:
     # =========================
     # BENCHMARK
     # =========================
-    st.markdown("## Benchmark Populacional")
+   st.markdown("## Benchmark Populacional")
 
-    for k, v in s.items():
-        user = v if k != "N" else 100 - v
-        pop = 50
+for k, v in s.items():
 
-        diff = user - pop
+    user = v if k != "N" else 100 - v
+    pctl = percentile(user)
 
-        st.write(f"**{PILLAR_NAMES[k]}**")
+    st.write(f"**{PILLAR_NAMES[k]}**")
 
-        col1, col2 = st.columns(2)
-        col1.metric("Você", f"{user}")
-        col2.metric("População", f"{pop}", delta=f"{diff:+}")
+    col1, col2 = st.columns(2)
+    col1.metric("Seu Score", f"{user}")
+    col2.metric("Percentil", f"{pctl}%")
 
-        st.progress(user/100)
+    st.progress(user/100)
