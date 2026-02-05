@@ -1,5 +1,5 @@
 # =====================================================
-# EXECUTIVE PERSONALITY ENGINE — PREMIUM VERSION
+# EXECUTIVE PERSONALITY ENGINE — PREMIUM (STABLE)
 # =====================================================
 
 import streamlit as st
@@ -10,7 +10,6 @@ import io
 from reportlab.lib.pagesizes import A4
 from reportlab.pdfgen import canvas
 from reportlab.lib.units import cm
-from reportlab.lib import colors
 
 # GPT opcional
 try:
@@ -26,19 +25,13 @@ st.set_page_config(page_title="Executive Personality Profile", layout="centered"
 PASSWORD = "1618"
 
 # -----------------------------------------------------
-# UI PREMIUM
+# UI
 # -----------------------------------------------------
 st.markdown("""
 <style>
-.block-container { max-width:760px; padding:1rem; }
+.block-container { max-width:760px; }
 h1,h2,h3 { text-align:center; color:#1F4E79; }
-button { width:100%; font-size:17px; border-radius:10px; }
-
-.card { background:white; border-radius:14px; padding:18px; margin:10px 0;
-box-shadow:0 4px 14px rgba(0,0,0,0.06); }
-
-.kpi { text-align:center; padding:10px; border-radius:10px;
-background:#F7FAFC; border:1px solid #E5E9F0; }
+button { width:100%; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -63,43 +56,47 @@ if not st.session_state.auth:
 # FUNÇÕES
 # -----------------------------------------------------
 def personality_type(s):
-    if s["O"]>=70 and s["E"]>=60:
-        return "Explorer","Curioso, inovador e orientado à exploração."
-    if s["C"]>=70 and s["N"]<=40:
-        return "Executor","Focado, disciplinado e consistente."
-    if s["C"]>=60 and s["A"]>=60:
-        return "Diplomat","Cooperativo, confiável e harmonizador."
-    return "Analyst","Reflexivo, estratégico e lógico."
+    if s["O"] >= 70 and s["E"] >= 60:
+        return "Explorer", "Curioso, inovador e orientado à exploração."
+    if s["C"] >= 70 and s["N"] <= 40:
+        return "Executor", "Focado, disciplinado e consistente."
+    if s["C"] >= 60 and s["A"] >= 60:
+        return "Diplomat", "Cooperativo, confiável e harmonizador."
+    return "Analyst", "Reflexivo, estratégico e lógico."
 
 def percentile(v):
-    if v>=85: return "Top 10%"
-    if v>=70: return "Acima da média"
-    if v>=40: return "Média"
+    if v >= 85: return "Top 10%"
+    if v >= 70: return "Acima da média"
+    if v >= 40: return "Média"
     return "Abaixo da média"
 
 # -----------------------------------------------------
 # QUESTIONÁRIO
 # -----------------------------------------------------
 QUESTIONS = {
-"O":[("o1","Tenho imaginação rica",False),("o2","Gosto de ideias abstratas",False),
-("o3","Interesse por arte",False),("o4","Prefiro rotina",True),
-("o5","Sou curioso",False),("o6","Evito filosofia",True),("o7","Penso no futuro",False)],
+    "O":[("o1","Tenho imaginação rica",False),("o2","Gosto de ideias abstratas",False),
+         ("o3","Interesse por arte",False),("o4","Prefiro rotina",True),
+         ("o5","Sou curioso",False),("o6","Evito filosofia",True),("o7","Penso no futuro",False)],
+    "C":[("c1","Sou organizado",False),("c2","Planejo antes",False),
+         ("c3","Cumpro prazos",False),("c4","Deixo tarefas",True),
+         ("c5","Sou disciplinado",False),("c6","Procrastino",True),("c7","Sou responsável",False)],
+    "E":[("e1","Gosto de socializar",False),("e2","Inicio conversas",False),
+         ("e3","Sou expressivo",False),("e4","Prefiro silêncio",True),
+         ("e5","Confortável em grupos",False),("e6","Evito atenção",True),("e7","Sou entusiasmado",False)],
+    "A":[("a1","Sou empático",False),("a2","Confio nas pessoas",False),
+         ("a3","Evito conflitos",False),("a4","Sou crítico",True),
+         ("a5","Gosto de ajudar",False),("a6","Sou duro",True),("a7","Valorizo cooperação",False)],
+    "N":[("n1","Preocupo-me fácil",False),("n2","Fico ansioso",False),
+         ("n3","Mudo humor",False),("n4","Sou calmo",True),
+         ("n5","Sinto tensão",False),("n6","Raramente estressado",True),("n7","Reajo forte",False)]
+}
 
-"C":[("c1","Sou organizado",False),("c2","Planejo antes",False),
-("c3","Cumpro prazos",False),("c4","Deixo tarefas",True),
-("c5","Sou disciplinado",False),("c6","Procrastino",True),("c7","Sou responsável",False)],
-
-"E":[("e1","Gosto de socializar",False),("e2","Inicio conversas",False),
-("e3","Sou expressivo",False),("e4","Prefiro silêncio",True),
-("e5","Confortável em grupos",False),("e6","Evito atenção",True),("e7","Sou entusiasmado",False)],
-
-"A":[("a1","Sou empático",False),("a2","Confio nas pessoas",False),
-("a3","Evito conflitos",False),("a4","Sou crítico",True),
-("a5","Gosto de ajudar",False),("a6","Sou duro",True),("a7","Valorizo cooperação",False)],
-
-"N":[("n1","Preocupo-me fácil",False),("n2","Fico ansioso",False),
-("n3","Mudo humor",False),("n4","Sou calmo",True),
-("n5","Sinto tensão",False),("n6","Raramente estressado",True),("n7","Reajo forte",False)]
+PILLAR_NAMES = {
+    "O":"Abertura à Experiência",
+    "C":"Conscienciosidade",
+    "E":"Extroversão",
+    "A":"Amabilidade",
+    "N":"Estabilidade Emocional"
 }
 
 pillars = list(QUESTIONS.keys())
@@ -107,210 +104,71 @@ pillars = list(QUESTIONS.keys())
 if "step" not in st.session_state:
     st.session_state.step = 0
 
-st.progress(st.session_state.step/5)
+st.progress(st.session_state.step / 5)
 
 # -----------------------------------------------------
-# ETAPAS DO QUESTIONÁRIO (UX EM 5 PASSOS)
+# ETAPAS
 # -----------------------------------------------------
-
 if st.session_state.step < 5:
-
     p = pillars[st.session_state.step]
     st.subheader(PILLAR_NAMES[p])
 
-    # Perguntas do pilar atual
     for qid, text, _ in QUESTIONS[p]:
         st.slider(text, 1, 5, 3, key=qid)
 
-    col1, col2 = st.columns(2)
-
-    with col1:
-        if st.button("⬅ Voltar") and st.session_state.step > 0:
-            st.session_state.step -= 1
-            st.rerun()
-
-    with col2:
-        if st.button("Próximo ➡"):
-            st.session_state.step += 1
-            st.rerun()
+    c1, c2 = st.columns(2)
+    if c1.button("⬅ Voltar") and st.session_state.step > 0:
+        st.session_state.step -= 1
+        st.rerun()
+    if c2.button("Próximo ➡"):
+        st.session_state.step += 1
+        st.rerun()
 
 else:
-    # -------------------------------------------------
-    # CÁLCULO DOS SCORES (0–100)
-    # -------------------------------------------------
     scores = {}
-
     for p in QUESTIONS:
         vals = []
-
         for qid, _, rev in QUESTIONS[p]:
-            v = st.session_state.get(qid, 3)  # evita KeyError
-
-            if rev:
-                v = 6 - v
-
+            v = st.session_state.get(qid, 3)
+            if rev: v = 6 - v
             vals.append(v)
-
         scores[p] = round((sum(vals) - 7) / 28 * 100, 1)
-
     st.session_state.scores = scores
 
-
-# =====================================================
-# RESULTADOS — PERFIL, GRÁFICOS E ANÁLISE
-# =====================================================
+# -----------------------------------------------------
+# RESULTADOS
+# -----------------------------------------------------
 if "scores" in st.session_state:
 
     s = st.session_state.scores
+    name = st.text_input("Nome", "Participante")
 
-    # ---------------------------------
-    # PERFIL EM DESTAQUE (TOPO)
-    # ---------------------------------
     ptype, pdesc = personality_type(s)
 
-    st.markdown(f"""
-    <h1 style='text-align:center; color:#1F4E79'>
-    Perfil Comportamental: {ptype}
-    </h1>
-    <p style='text-align:center; font-size:16px'>
-    {pdesc}
-    </p>
-    """, unsafe_allow_html=True)
+    st.markdown(f"## Perfil Comportamental: **{ptype}**")
+    st.write(pdesc)
 
-    # ---------------------------------
-    # EXECUTIVE SNAPSHOT
-    # ---------------------------------
     st.markdown("### Executive Snapshot")
-
-    col1, col2 = st.columns(2)
-
-    with col1:
-        st.metric("Abertura (Estilo Cognitivo)", s["O"])
-        st.metric("Conscienciosidade (Execução)", s["C"])
-
-    with col2:
-        st.metric("Extroversão (Energia Social)", s["E"])
-        st.metric("Amabilidade (Cooperação)", s["A"])
-
+    st.metric("Abertura", s["O"])
+    st.metric("Execução", s["C"])
+    st.metric("Energia Social", s["E"])
+    st.metric("Cooperação", s["A"])
     st.metric("Estabilidade Emocional", 100 - s["N"])
 
-  
- # =========================
-# MATRIZ EXECUTIVA
-# =========================
-st.markdown("### Matriz Executiva de Posicionamento")
+    st.markdown("### Matriz Executiva")
+    x = (s["O"] + s["E"]) / 2
+    y = (s["C"] + (100 - s["N"])) / 2
 
-x = (s["O"] + s["E"]) / 2
-y = (s["C"] + (100 - s["N"])) / 2
+    fig, ax = plt.subplots()
+    ax.scatter(x, y, s=160)
+    ax.axhline(50, ls="--")
+    ax.axvline(50, ls="--")
+    ax.set_xlim(0,100)
+    ax.set_ylim(0,100)
+    st.pyplot(fig)
 
-fig2, ax2 = plt.subplots(figsize=(6,6))
+    st.markdown("### Benchmark Populacional")
+    for k,v in s.items():
+        display = v if k!="N" else 100-v
+        st.progress(display/100, f"{PILLAR_NAMES[k]} — {percentile(display)}")
 
-# Linhas de corte
-ax2.axhline(50, linestyle="--", color="#C0C7D1")
-ax2.axvline(50, linestyle="--", color="#C0C7D1")
-
-# Ponto do usuário
-ax2.scatter(x, y, s=180, color="#1F4E79")
-
-# Limites
-ax2.set_xlim(0,100)
-ax2.set_ylim(0,100)
-
-ax2.set_xlabel("Orientação Estratégica (Visão & Influência)")
-ax2.set_ylabel("Execução & Consistência")
-
-ax2.set_title("Executive Positioning Matrix")
-
-# Quadrantes
-ax2.text(75,85,"Líder Estratégico", ha="center", fontsize=9)
-ax2.text(25,85,"Executor Técnico", ha="center", fontsize=9)
-ax2.text(25,15,"Zona de Desenvolvimento", ha="center", fontsize=9)
-ax2.text(75,15,"Influenciador Adaptativo", ha="center", fontsize=9)
-
-st.pyplot(fig2)
-
-# Classificação
-if x>=50 and y>=50:
-    quad="Líder Estratégico"
-elif x<50 and y>=50:
-    quad="Executor Técnico"
-elif x<50 and y<50:
-    quad="Zona de Desenvolvimento"
-else:
-    quad="Influenciador Adaptativo"
-
-st.info(f"Posicionamento Executivo: {quad}")
-
-
-    # TIPOS
-    ptype,pdesc = personality_type(s)
-    st.markdown(f"### {ptype}")
-    st.info(pdesc)
-
-    # BENCHMARK
-  st.markdown("### Comparação com a População")
-
-FULL_NAMES = {
-    "O": "Abertura à Experiência",
-    "C": "Conscienciosidade",
-    "E": "Extroversão",
-    "A": "Amabilidade",
-    "N": "Estabilidade Emocional"
-}
-
-for k, v in s.items():
-    display_val = v if k != "N" else 100 - v
-    st.progress(display_val/100, text=f"{FULL_NAMES[k]} — {percentile(display_val)} ({display_val})")
-
-
-    # -------------------------------------------------
-    # GPT ANALYSIS
-    # -------------------------------------------------
-    if GPT_AVAILABLE and "OPENAI_API_KEY" in st.secrets:
-
-        client = OpenAI(api_key=st.secrets["OPENAI_API_KEY"])
-
-        if st.button("Gerar análise com IA"):
-
-            prompt=f"Analise psicologicamente Big Five: {s}"
-
-            with st.spinner("Gerando análise..."):
-                try:
-                    r = client.responses.create(
-                        model="gpt-4o-mini",
-                        input=prompt
-                    )
-                    st.session_state.analysis = r.output_text
-                except Exception as e:
-                    st.error("Erro IA")
-
-    if "analysis" in st.session_state:
-        st.markdown("### IA Analysis")
-        st.write(st.session_state.analysis)
-
-        # PDF
-        def gerar_pdf(name,s,analysis):
-            buffer=io.BytesIO()
-            c=canvas.Canvas(buffer,pagesize=A4)
-            w,h=A4
-
-            c.setFont("Helvetica-Bold",18)
-            c.drawString(2*cm,h-3*cm,"Executive Personality Report")
-            c.drawString(2*cm,h-4*cm,name)
-
-            y=h-6*cm
-            for k,v in s.items():
-                c.drawString(2*cm,y,f"{k}:{v}")
-                y-=0.7*cm
-
-            c.showPage()
-            text=c.beginText(2*cm,h-3*cm)
-            for line in analysis.split("\n"):
-                text.textLine(line)
-            c.drawText(text)
-            c.save()
-            buffer.seek(0)
-            return buffer
-
-        pdf = gerar_pdf(name,s,st.session_state.analysis)
-        st.download_button("Baixar PDF",pdf,file_name="executive_profile.pdf")
