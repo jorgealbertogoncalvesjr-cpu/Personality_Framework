@@ -135,16 +135,22 @@ if st.session_state.step < 5:
 # -----------------------------------------------------
 else:
 
-    scores = {}
-    for p in QUESTIONS:
-        vals=[]
-        for qid,_,rev in QUESTIONS[p]:
-            v = st.session_state[qid]
-            if rev: v = 6 - v
-            vals.append(v)
-        scores[p] = round((sum(vals)-7)/28*100,1)
+scores = {}
+for p in QUESTIONS:
+    vals = []
+    for qid, _, rev in QUESTIONS[p]:
 
-    st.session_state.scores = scores
+        v = st.session_state.get(qid, 3)   # ← CORREÇÃO AQUI
+
+        if rev:
+            v = 6 - v
+
+        vals.append(v)
+
+    scores[p] = round((sum(vals) - 7) / 28 * 100, 1)
+
+st.session_state.scores = scores
+
 
 # -----------------------------------------------------
 # RESULTADOS
