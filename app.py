@@ -156,31 +156,45 @@ else:
     st.session_state.scores = scores
 
 
-# -----------------------------------------------------
-# RESULTAD
-# -----------------------------------------------------
+# =====================================================
+# RESULTADOS — PERFIL, GRÁFICOS E ANÁLISE
+# =====================================================
 if "scores" in st.session_state:
 
     s = st.session_state.scores
 
-    # =========================
+    # ---------------------------------
+    # PERFIL EM DESTAQUE (TOPO)
+    # ---------------------------------
+    ptype, pdesc = personality_type(s)
+
+    st.markdown(f"""
+    <h1 style='text-align:center; color:#1F4E79'>
+    Perfil Comportamental: {ptype}
+    </h1>
+    <p style='text-align:center; font-size:16px'>
+    {pdesc}
+    </p>
+    """, unsafe_allow_html=True)
+
+    # ---------------------------------
     # EXECUTIVE SNAPSHOT
-    # =========================
+    # ---------------------------------
     st.markdown("### Executive Snapshot")
 
     col1, col2 = st.columns(2)
 
     with col1:
-        st.metric("Estilo Cognitivo (Abertura)", s["O"])
-        st.metric("Execução (Conscienciosidade)", s["C"])
+        st.metric("Abertura (Estilo Cognitivo)", s["O"])
+        st.metric("Conscienciosidade (Execução)", s["C"])
 
     with col2:
-        st.metric("Energia Social (Extroversão)", s["E"])
-        st.metric("Cooperação (Amabilidade)", s["A"])
+        st.metric("Extroversão (Energia Social)", s["E"])
+        st.metric("Amabilidade (Cooperação)", s["A"])
 
     st.metric("Estabilidade Emocional", 100 - s["N"])
 
-    # MATRIZ
+  
  # =========================
 # MATRIZ EXECUTIVA
 # =========================
