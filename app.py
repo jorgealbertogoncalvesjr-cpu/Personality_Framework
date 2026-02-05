@@ -333,3 +333,202 @@ if st.session_state.start_test:
 
         st.info("Na próxima etapa você verá seu gráfico comportamental e análise do perfil.")
 
+# =====================================================
+# PARTE 3 — RESULTADOS (Radar + Matriz + Interpretação)
+# =====================================================
+
+import numpy as np
+import matplotlib.pyplot as plt
+
+if "scores" in st.session_state:
+
+    st.divider()
+    st.markdown("## 📊 Seu Resultado")
+
+    # -------------------------------------------------
+    # Nome do usuário (personalização)
+    # -------------------------------------------------
+    if "user_name" not in st.session_state:
+        st.session_state.user_name = ""
+
+    st.session_state.user_name = st.text_input(
+        "Digite seu nome para personalizar o relatório",
+        value=st.session_state.user_name,
+        placeholder="Ex: Maria"
+    )
+
+    name = st.session_state.user_name.strip() or "Participante"
+
+    scores = st.session_state.scores
+
+    # -------------------------------------------------
+    # 1) GRÁFICO RADAR — DNA COMPORTAMENTAL
+    # -------------------------------------------------
+    st.markdown("### 🧬 DNA Comportamental (Big Five)")
+
+    categories = [
+        "Abertura",
+        "Conscienciosidade",
+        "Extroversão",
+        "Amabilidade",
+        "Neuroticismo"
+    ]
+    values = [
+        scores["O"],
+        scores["C"],
+        scores["E"],
+        scores["A"],
+        scores["N"]
+    ]
+
+    # Fechar o radar
+    angles = np.linspace(0, 2 * np.pi, len(categories), endpoint=False).tolist()
+    values_cycle = values + values[:1]
+    angles_cycle = angles + angles[:1]
+
+    fig_radar = plt.figure(figsize=(6, 6))
+    ax = plt.subplot(polar=True)
+    ax.plot(angles_cycle, values_cycle, linewidth=2)
+    ax.fill(angles_cycle, values_cycle, alpha=0.2)
+    ax.set_xticks(angles)
+    ax.set_xticklabels(categories)
+    ax.set_yticks([20, 40, 60, 80, 100])
+    ax.set_yticklabels(["20", "40", "60", "80", "100"])
+    ax.set_title(f"Perfil de {name}", pad=20)
+    st.pyplot(fig_radar)
+
+    # -------------------------------------------------
+    # 2) MATRIZ DE POSICIONAMENTO (QUADRANTE)
+    # Eixos compostos (simples e explicáveis)
+    # X = Orientação Externa  = Extroversão - Neuroticismo
+    # Y = Organização/Execução = Conscienciosidade + Abertura
+    # Normalização 0–100
+    # -------------------------------------------------
+    st.markdown("### 🧭 Matriz de Posicionamento")
+
+    x_raw = scores["E"] - scores["N"]          # pode ir de -100 a 100
+    y_raw = (scores["C"] + scores["O"]) / 2.0  # 0 a 100
+
+    # Normalizar X para 0–100
+    x_norm = (x_raw + 100) / 2.0
+    y_norm = y_raw
+
+    fig_mat, axm = plt.subplots(figsize=(6, 6))
+    axm.axhline(50, linestyle="--", linewidth=1)
+    axm.axvline(50, linestyle="--", linewidth=1)
+    axm.scatter(x_norm, y_norm, s=120)
+    axm.set_xlim(0, 100)
+    axm.set_ylim(0, 100)
+    axm.set_xlabel("Orientação Externa (Energia Social ↔ Estabilidade Emocional)")
+    axm.set_ylabel("Organização & Abertura (Execução ↔ Exploração)")
+    axm.set_title(f"Posicionamento de {name}")
+
+    # Rótulos de quadrante
+    axm.text(75, 85, "Alta Execução\nAlta Orientação Externa", ha="center")
+    axm.text(25, 85, "Alta Execução\nBaixa Orientação Externa", ha="center")
+    axm.text(75, 15, "Baixa Execução\nAlta Orientação Externa", ha="center")
+    axm.text(25, 15, "Baixa Execução\nBaixa Orientação Externa", ha="center")
+
+    st.pyplot(fig_mat)
+
+    # Classificação simples do quadrante
+    if x_norm >= 50 and y_norm >= 50:
+        quadrant = "Q1 — Alta Execução / Alta Orientação Externa"
+    elif x_norm < 50 and y_norm >= 50:
+        quadrant = "Q2 — Alta Execução / Baixa Orientação Externa"
+    elif x_norm < 50 and y_norm < 50:
+        quadrant = "Q3 — Baixa Execução / Baixa Orientação Externa"
+    else:
+        quadrant = "Q4 — Baixa Execução / Alta Orientação Externa"
+
+    st.info(f"Classificação na Matriz: **{quadrant}**")
+
+    # -------------------------------------------------
+    # 3) INTERPRETAÇÃO AUTOMÁTICA (nível psicológico)
+    # -------------------------------------------------
+    st.markdown("### 🧠 Interpretação do Perfil")
+
+    def level(v):
+        if v >= 70: return "alto"
+        if v >= 40: return "moderado"
+        return "baixo"
+
+    interp = f"""
+{name} apresenta:
+
+- **Abertura:** nível {level(scores['O'])} — tendência a {'explorar ideias novas e complexas' if scores['O']>=70 else 'equilibrar prática e curiosidade' if scores['O']>=40 else 'preferir o concreto e familiar'}.
+- **Conscienciosidade:** nível {level(scores['C'])} — {'forte organização e foco em metas' if scores['C']>=70 else 'disciplina situacional' if scores['C']>=40 else 'espontaneidade e flexibilidade'}.
+- **Extroversão:** nível {level(scores['E'])} — {'energia social e assertividade' if scores['E']>=70 else 'equilíbrio entre social e introspectivo' if scores['E']>=40 else 'preferência por ambientes calmos'}.
+- **Amabilidade:** nível {level(scores['A'])} — {'cooperação e empatia elevadas' if scores['A']>=70 else 'equilíbrio entre cooperação e objetividade' if scores['A']>=40 else 'postura mais direta e crítica'}.
+- **Neuroticismo:** nível {level(scores['N'])} — {'maior reatividade emocional ao estresse' if scores['N']>=70 else 'resposta emocional moderada' if scores['N']>=40 else 'estabilidade emocional e resiliência'}.
+"""
+    st.markdown(interp)
+
+    # -------------------------------------------------
+    # 4) PONTOS FORTES & ATENÇÃO
+    # -------------------------------------------------
+    st.markdown("### 🎯 Pontos Fortes Naturais")
+    strengths = []
+    if scores["C"] >= 70: strengths.append("Alta organização e confiabilidade")
+    if scores["O"] >= 70: strengths.append("Criatividade e pensamento exploratório")
+    if scores["E"] >= 70: strengths.append("Energia social e comunicação")
+    if scores["A"] >= 70: strengths.append("Empatia e cooperação")
+    if scores["N"] <= 30: strengths.append("Estabilidade emocional sob pressão")
+
+    if strengths:
+        for s in strengths:
+            st.write(f"• {s}")
+    else:
+        st.write("• Perfil equilibrado, sem dominância extrema.")
+
+    st.markdown("### ⚠️ Pontos de Atenção")
+    risks = []
+    if scores["C"] <= 35: risks.append("Possível dificuldade de consistência e execução")
+    if scores["E"] <= 35: risks.append("Tendência ao isolamento em ambientes sociais")
+    if scores["A"] <= 35: risks.append("Comunicação pode soar excessivamente direta")
+    if scores["O"] <= 35: risks.append("Menor abertura a mudanças e novas ideias")
+    if scores["N"] >= 70: risks.append("Maior sensibilidade ao estresse")
+
+    if risks:
+        for r in risks:
+            st.write(f"• {r}")
+    else:
+        st.write("• Sem riscos comportamentais evidentes.")
+
+    # -------------------------------------------------
+    # 5) BASE PARA PDF (função simples)
+    # -------------------------------------------------
+    st.markdown("### 📄 Relatório")
+
+    def build_text_report(name, scores, quadrant):
+        return f"""
+RELATÓRIO DE PERFIL — {name}
+
+Pontuações (0–100):
+Abertura: {scores['O']}
+Conscienciosidade: {scores['C']}
+Extroversão: {scores['E']}
+Amabilidade: {scores['A']}
+Neuroticismo: {scores['N']}
+
+Matriz de Posicionamento:
+{quadrant}
+
+Este relatório é baseado no modelo Big Five (IPIP).
+"""
+
+    report_text = build_text_report(name, scores, quadrant)
+
+    st.download_button(
+        "📥 Baixar Relatório (TXT)",
+        data=report_text.encode("utf-8"),
+        file_name=f"Perfil_{name}.txt",
+        mime="text/plain"
+    )
+
+    st.caption("""
+Base científica: International Personality Item Pool (IPIP) — Goldberg (1992).
+Este relatório é informativo e não substitui avaliação clínica.
+""")
+
+
