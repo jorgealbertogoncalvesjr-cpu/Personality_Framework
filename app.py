@@ -115,7 +115,15 @@ st.progress(st.session_state.step/5)
 if st.session_state.step < 5:
 
     p = pillars[st.session_state.step]
-    st.subheader(f"Pilar {st.session_state.step+1}/5")
+    PILLAR_NAMES = {
+    "O": "Abertura à Experiência (Openness)",
+    "C": "Conscienciosidade (Execução & Disciplina)",
+    "E": "Extroversão (Energia Social)",
+    "A": "Amabilidade (Cooperação & Empatia)",
+    "N": "Estabilidade Emocional (Neuroticismo)"
+}
+
+st.subheader(PILLAR_NAMES[p])
 
     for qid,text,_ in QUESTIONS[p]:
         st.slider(text,1,5,3,key=qid)
@@ -155,6 +163,16 @@ else:
 
     st.session_state.scores = scores
 
+ptype, pdesc = personality_type(s)
+
+st.markdown(f"""
+<h1 style='text-align:center; font-size:32px; color:#1F4E79'>
+Perfil Comportamental: {ptype}
+</h1>
+<p style='text-align:center; font-size:16px'>
+{pdesc}
+</p>
+""", unsafe_allow_html=True)
 
 
 # -----------------------------------------------------
@@ -164,12 +182,20 @@ if "scores" in st.session_state:
 
     s = st.session_state.scores
 
-    st.markdown("### Executive Snapshot")
+ st.markdown("### Executive Snapshot")
 
-    cols = st.columns(5)
-    for col,(k,v) in zip(cols,s.items()):
-        with col:
-            st.markdown(f"<div class='kpi'><b>{k}</b><br>{v}</div>", unsafe_allow_html=True)
+col1, col2 = st.columns(2)
+
+with col1:
+    st.metric("Estilo Cognitivo (Abertura)", s["O"])
+    st.metric("Capacidade de Execução (Conscienciosidade)", s["C"])
+
+with col2:
+    st.metric("Energia Social (Extroversão)", s["E"])
+    st.metric("Cooperação (Amabilidade)", s["A"])
+
+st.metric("Estabilidade Emocional", 100 - s["N"])
+
 
     name = st.text_input("Nome para relatório","Participante")
 
@@ -190,17 +216,52 @@ if "scores" in st.session_state:
     st.pyplot(fig)
 
     # MATRIZ
-    x=(s["E"]-s["N"]+100)/2
-    y=(s["C"]+s["O"])/2
+ # =========================
+# MATRIZ EXECUTIVA
+# =========================
+st.markdown("### Matriz Executiva de Posicionamento")
 
-    fig2,ax2=plt.subplots(figsize=(5,5))
-    ax2.axhline(50,ls="--",color="#C0C7D1")
-    ax2.axvline(50,ls="--",color="#C0C7D1")
-    ax2.scatter(x,y,s=150,color="#1F4E79")
-    ax2.set_xlim(0,100)
-    ax2.set_ylim(0,100)
-    ax2.set_title("Executive Positioning Matrix")
-    st.pyplot(fig2)
+x = (s["O"] + s["E"]) / 2
+y = (s["C"] + (100 - s["N"])) / 2
+
+fig2, ax2 = plt.subplots(figsize=(6,6))
+
+# Linhas de corte
+ax2.axhline(50, linestyle="--", color="#C0C7D1")
+ax2.axvline(50, linestyle="--", color="#C0C7D1")
+
+# Ponto do usuário
+ax2.scatter(x, y, s=180, color="#1F4E79")
+
+# Limites
+ax2.set_xlim(0,100)
+ax2.set_ylim(0,100)
+
+ax2.set_xlabel("Orientação Estratégica (Visão & Influência)")
+ax2.set_ylabel("Execução & Consistência")
+
+ax2.set_title("Executive Positioning Matrix")
+
+# Quadrantes
+ax2.text(75,85,"Líder Estratégico", ha="center", fontsize=9)
+ax2.text(25,85,"Executor Técnico", ha="center", fontsize=9)
+ax2.text(25,15,"Zona de Desenvolvimento", ha="center", fontsize=9)
+ax2.text(75,15,"Influenciador Adaptativo", ha="center", fontsize=9)
+
+st.pyplot(fig2)
+
+# Classificação
+if x>=50 and y>=50:
+    quad="Líder Estratégico"
+elif x<50 and y>=50:
+    quad="Executor Técnico"
+elif x<50 and y<50:
+    quad="Zona de Desenvolvimento"
+else:
+    quad="Influenciador Adaptativo"
+
+st.info(f"Posicionamento Executivo: {quad}")
+
 
     # TIPOS
     ptype,pdesc = personality_type(s)
@@ -208,9 +269,20 @@ if "scores" in st.session_state:
     st.info(pdesc)
 
     # BENCHMARK
-    st.markdown("### Population Benchmark")
-    for k,v in s.items():
-        st.progress(v/100,text=f"{k} — {percentile(v)} ({v})")
+  st.markdown("### Comparação com a População")
+
+FULL_NAMES = {
+    "O": "Abertura à Experiência",
+    "C": "Conscienciosidade",
+    "E": "Extroversão",
+    "A": "Amabilidade",
+    "N": "Estabilidade Emocional"
+}
+
+for k, v in s.items():
+    display_val = v if k != "N" else 100 - v
+    st.progress(display_val/100, text=f"{FULL_NAMES[k]} — {percentile(display_val)} ({display_val})")
+
 
     # -------------------------------------------------
     # GPT ANALYSIS
