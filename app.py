@@ -201,9 +201,14 @@ if "scores" in st.session_state:
 
 #ETAPA 8 — TIPO + BENCHMARK
 
-ptype,pdesc=personality_type(scores)
-st.subheader("Personality Archetype")
-st.success(f"{ptype} — {pdesc}")
+
+if "scores" in st.session_state:
+    scores = st.session_state.scores
+    ptype, pdesc = personality_type(scores)
+
+    st.markdown("## 🧬 Seu Tipo de Personalidade")
+    st.success(f"**{ptype}** — {pdesc}")
+
 
 st.subheader("Benchmark Populacional")
 for k,v in scores.items():
@@ -211,29 +216,47 @@ for k,v in scores.items():
 
 #ETAPA 9 — GPT
 
-if GPT_AVAILABLE and "OPENAI_API_KEY" in st.secrets:
+if GPT_AVAILABLE and "OPENAI_API_KEY" in st.secrets and "scores" in st.session_state:
 
-    client=OpenAI(api_key=st.secrets["OPENAI_API_KEY"])
+    client = OpenAI(api_key=st.secrets["OPENAI_API_KEY"])
+    scores = st.session_state.scores
 
-    if st.button("Gerar análise com IA"):
-        prompt=f"Analise perfil Big Five: {scores}"
-        r=client.chat.completions.create(
-            model="gpt-4o-mini",
-            messages=[{"role":"user","content":prompt}]
-        )
-        st.session_state.analysis=r.choices[0].message.content
+    if st.button("Gerar análise personalizada com IA"):
+
+        prompt = f"""
+Você é um psicólogo comportamental especialista no modelo Big Five.
+
+Gere uma análise clara, profissional e construtiva.
+
+Pontuações:
+Abertura: {scores['O']}
+Conscienciosidade: {scores['C']}
+Extroversão: {scores['E']}
+Amabilidade: {scores['A']}
+Neuroticismo: {scores['N']}
+
+Estruture em:
+1. Visão geral
+2. Estilo cognitivo
+3. Perfil emocional
+4. Comportamento social
+5. Pontos fortes
+6. Pontos de atenção
+"""
+
+        with st.spinner("Gerando análise psicológica personalizada..."):
+            try:
+                response = client.responses.create(
+                    model="gpt-4o-mini",
+                    input=prompt
+                )
+                st.session_state.analysis = response.output_text
+            except Exception as e:
+                st.error("Erro ao gerar análise com IA.")
+                st.exception(e)
 
 if "analysis" in st.session_state:
+    st.markdown("## 🧠 Análise Psicológica (IA)")
     st.write(st.session_state.analysis)
 
-#ETAPA FINAL — PDF
-if "analysis" in st.session_state:
-    pdf=gerar_pdf(name,scores,"Perfil Estratégico",st.session_state.analysis)
-
-    st.download_button(
-        "Baixar PDF Executivo",
-        pdf,
-        file_name=f"Perfil_{name}.pdf",
-        mime="application/pdf"
-    )
 
