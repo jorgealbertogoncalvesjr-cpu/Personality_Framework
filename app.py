@@ -197,72 +197,74 @@ if "scores" in st.session_state:
     st.markdown(f"## Perfil Comportamental: **{ptype}**")
     st.write(pdesc)
 
+    # =========================
+    # EXECUTIVE SNAPSHOT
+    # =========================
     st.markdown("## Executive Snapshot")
 
-st.metric("🧠 Abertura Cognitiva", f"{s['O']}")
-st.metric("🎯 Execução & Disciplina", f"{s['C']}")
-st.metric("⚡ Energia Social", f"{s['E']}")
-st.metric("🤝 Cooperação", f"{s['A']}")
-st.metric("🧘 Estabilidade Emocional", f"{100 - s['N']}")
+    st.metric("🧠 Abertura Cognitiva", f"{s['O']}")
+    st.metric("🎯 Execução & Disciplina", f"{s['C']}")
+    st.metric("⚡ Energia Social", f"{s['E']}")
+    st.metric("🤝 Cooperação", f"{s['A']}")
+    st.metric("🧘 Estabilidade Emocional", f"{100 - s['N']}")
 
+    # =========================
+    # MATRIZ EXECUTIVA
+    # =========================
+    st.markdown("## Matriz Executiva de Posicionamento")
 
-   st.markdown("## Matriz Executiva de Posicionamento")
+    x = (s["O"] + s["E"]) / 2
+    y = (s["C"] + (100 - s["N"])) / 2
 
-x = (s["O"] + s["E"]) / 2
-y = (s["C"] + (100 - s["N"])) / 2
+    fig, ax = plt.subplots(figsize=(6,6))
 
-fig, ax = plt.subplots(figsize=(6,6))
+    ax.axhspan(50,100, xmin=0.5, xmax=1, alpha=0.08, color="green")
+    ax.axhspan(50,100, xmin=0, xmax=0.5, alpha=0.08, color="blue")
+    ax.axhspan(0,50, xmin=0, xmax=0.5, alpha=0.08, color="orange")
+    ax.axhspan(0,50, xmin=0.5, xmax=1, alpha=0.08, color="purple")
 
-# Quadrantes coloridos
-ax.axhspan(50,100, xmin=0.5, xmax=1, alpha=0.08, color="green")
-ax.axhspan(50,100, xmin=0, xmax=0.5, alpha=0.08, color="blue")
-ax.axhspan(0,50, xmin=0, xmax=0.5, alpha=0.08, color="orange")
-ax.axhspan(0,50, xmin=0.5, xmax=1, alpha=0.08, color="purple")
+    ax.axhline(50, linestyle="--")
+    ax.axvline(50, linestyle="--")
 
-ax.axhline(50, linestyle="--")
-ax.axvline(50, linestyle="--")
+    ax.scatter(x, y, s=180, color="#1F4E79")
 
-ax.scatter(x, y, s=180, color="#1F4E79")
+    ax.set_xlim(0,100)
+    ax.set_ylim(0,100)
 
-ax.set_xlim(0,100)
-ax.set_ylim(0,100)
+    ax.set_xlabel("Visão & Influência")
+    ax.set_ylabel("Execução & Consistência")
 
-ax.set_xlabel("Visão & Influência")
-ax.set_ylabel("Execução & Consistência")
+    ax.text(75,85,"Líder Estratégico", ha="center", fontsize=9)
+    ax.text(25,85,"Executor Técnico", ha="center", fontsize=9)
+    ax.text(25,15,"Zona de Desenvolvimento", ha="center", fontsize=9)
+    ax.text(75,15,"Perfil Adaptativo", ha="center", fontsize=9)
 
-ax.text(75,85,"Líder Estratégico", ha="center", fontsize=9)
-ax.text(25,85,"Executor Técnico", ha="center", fontsize=9)
-ax.text(25,15,"Zona de Desenvolvimento", ha="center", fontsize=9)
-ax.text(75,15,"Perfil Adaptativo", ha="center", fontsize=9)
+    st.pyplot(fig)
 
-st.pyplot(fig)
+    st.info("""
+    **Como interpretar**
 
-# Explicação
-st.info("""
-**Como interpretar**
+    🔵 Executor Técnico → forte execução, menor influência  
+    🟢 Líder Estratégico → visão + execução elevadas  
+    🟠 Zona de Desenvolvimento → foco em evolução  
+    🟣 Perfil Adaptativo → flexível e explorador  
+    """)
 
-🔵 Executor Técnico → forte execução, menor influência  
-🟢 Líder Estratégico → visão + execução elevadas  
-🟠 Zona de Desenvolvimento → foco em evolução  
-🟣 Perfil Adaptativo → flexível e explorador  
-""")
+    # =========================
+    # BENCHMARK
+    # =========================
+    st.markdown("## Benchmark Populacional")
 
+    for k, v in s.items():
+        user = v if k != "N" else 100 - v
+        pop = 50
 
-st.markdown("## Benchmark Populacional")
+        diff = user - pop
 
-for k, v in s.items():
-    user = v if k != "N" else 100 - v
-    pop = 50  # média populacional
+        st.write(f"**{PILLAR_NAMES[k]}**")
 
-    diff = user - pop
+        col1, col2 = st.columns(2)
+        col1.metric("Você", f"{user}")
+        col2.metric("População", f"{pop}", delta=f"{diff:+}")
 
-    st.write(f"**{PILLAR_NAMES[k]}**")
-
-    col1, col2 = st.columns(2)
-    col1.metric("Você", f"{user}")
-    col2.metric("População", f"{pop}", delta=f"{diff:+}")
-
-    st.progress(user/100)
-
-
-
+        st.progress(user/100)
