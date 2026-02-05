@@ -159,13 +159,18 @@ if st.session_state.step < 5:
         st.rerun()
 
 else:
-   scores = {}
+ # -------------------------------------------------
+# CÁLCULO DOS SCORES (0–100) — SEGURO
+# -------------------------------------------------
+scores = {}
 
 for p in QUESTIONS:
+
     vals = []
     answered = 0
 
     for qid, _, rev in QUESTIONS[p]:
+
         if qid in st.session_state:
             v = st.session_state[qid]
             answered += 1
@@ -180,8 +185,11 @@ for p in QUESTIONS:
     if answered == 0:
         scores[p] = 0
     else:
-        raw = sum(vals) / answered  # média real
-        scores[p] = round((raw - 1) / 4 * 100, 1)  # normalização correta
+        raw = sum(vals) / answered   # média real
+        scores[p] = round((raw - 1) / 4 * 100, 1)
+
+st.session_state.scores = scores
+
 
 
 # -----------------------------------------------------
