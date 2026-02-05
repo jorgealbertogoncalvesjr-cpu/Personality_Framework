@@ -6,4 +6,3 @@ streamlit-gsheets>=0.0.14
 gspread==6.0.2
 openai>=1.30.0
 reportlab==4.2.2
-
