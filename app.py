@@ -25,15 +25,34 @@ st.set_page_config(page_title="Executive Personality Profile", layout="centered"
 PASSWORD = "1618"
 
 # -----------------------------------------------------
-# UI
+# ETAPA 1 — BASE UX + SCORE CORRIGIDO
 # -----------------------------------------------------
 st.markdown("""
 <style>
-.block-container { max-width:760px; }
-h1,h2,h3 { text-align:center; color:#1F4E79; }
-button { width:100%; }
+.block-container { max-width:780px; padding:1.2rem; }
+
+h1 { font-size:28px; }
+h2 { font-size:22px; }
+h3 { font-size:19px; }
+
+.stSlider label { font-size:16px !important; }
+
+button { width:100%; font-size:18px; padding:0.6rem; }
+
+.likert {
+    font-size:14px;
+    color:#5A6A7A;
+    margin-bottom:8px;
+}
+
+@media (max-width:768px){
+    h1{font-size:24px}
+    h2{font-size:20px}
+    h3{font-size:17px}
+}
 </style>
 """, unsafe_allow_html=True)
+
 
 # -----------------------------------------------------
 # LOGIN
@@ -73,6 +92,21 @@ def percentile(v):
 # -----------------------------------------------------
 # QUESTIONÁRIO
 # -----------------------------------------------------
+
+st.markdown("""
+<div class="likert">
+<b>Escala:</b><br>
+1 — Discordo totalmente<br>
+2 — Discordo<br>
+3 — Neutro<br>
+4 — Concordo<br>
+5 — Concordo totalmente
+</div>
+""", unsafe_allow_html=True)
+
+
+
+
 QUESTIONS = {
     "O":[("o1","Tenho imaginação rica",False),("o2","Gosto de ideias abstratas",False),
          ("o3","Interesse por arte",False),("o4","Prefiro rotina",True),
@@ -125,15 +159,30 @@ if st.session_state.step < 5:
         st.rerun()
 
 else:
-    scores = {}
-    for p in QUESTIONS:
-        vals = []
-        for qid, _, rev in QUESTIONS[p]:
-            v = st.session_state.get(qid, 3)
-            if rev: v = 6 - v
-            vals.append(v)
-        scores[p] = round((sum(vals) - 7) / 28 * 100, 1)
-    st.session_state.scores = scores
+   scores = {}
+
+for p in QUESTIONS:
+    vals = []
+    answered = 0
+
+    for qid, _, rev in QUESTIONS[p]:
+        if qid in st.session_state:
+            v = st.session_state[qid]
+            answered += 1
+        else:
+            continue
+
+        if rev:
+            v = 6 - v
+
+        vals.append(v)
+
+    if answered == 0:
+        scores[p] = 0
+    else:
+        raw = sum(vals) / answered  # média real
+        scores[p] = round((raw - 1) / 4 * 100, 1)  # normalização correta
+
 
 # -----------------------------------------------------
 # RESULTADOS
@@ -148,27 +197,72 @@ if "scores" in st.session_state:
     st.markdown(f"## Perfil Comportamental: **{ptype}**")
     st.write(pdesc)
 
-    st.markdown("### Executive Snapshot")
-    st.metric("Abertura", s["O"])
-    st.metric("Execução", s["C"])
-    st.metric("Energia Social", s["E"])
-    st.metric("Cooperação", s["A"])
-    st.metric("Estabilidade Emocional", 100 - s["N"])
+    st.markdown("## Executive Snapshot")
 
-    st.markdown("### Matriz Executiva")
-    x = (s["O"] + s["E"]) / 2
-    y = (s["C"] + (100 - s["N"])) / 2
+st.metric("🧠 Abertura Cognitiva", f"{s['O']}")
+st.metric("🎯 Execução & Disciplina", f"{s['C']}")
+st.metric("⚡ Energia Social", f"{s['E']}")
+st.metric("🤝 Cooperação", f"{s['A']}")
+st.metric("🧘 Estabilidade Emocional", f"{100 - s['N']}")
 
-    fig, ax = plt.subplots()
-    ax.scatter(x, y, s=160)
-    ax.axhline(50, ls="--")
-    ax.axvline(50, ls="--")
-    ax.set_xlim(0,100)
-    ax.set_ylim(0,100)
-    st.pyplot(fig)
 
-    st.markdown("### Benchmark Populacional")
-    for k,v in s.items():
-        display = v if k!="N" else 100-v
-        st.progress(display/100, f"{PILLAR_NAMES[k]} — {percentile(display)}")
+   st.markdown("## Matriz Executiva de Posicionamento")
+
+x = (s["O"] + s["E"]) / 2
+y = (s["C"] + (100 - s["N"])) / 2
+
+fig, ax = plt.subplots(figsize=(6,6))
+
+# Quadrantes coloridos
+ax.axhspan(50,100, xmin=0.5, xmax=1, alpha=0.08, color="green")
+ax.axhspan(50,100, xmin=0, xmax=0.5, alpha=0.08, color="blue")
+ax.axhspan(0,50, xmin=0, xmax=0.5, alpha=0.08, color="orange")
+ax.axhspan(0,50, xmin=0.5, xmax=1, alpha=0.08, color="purple")
+
+ax.axhline(50, linestyle="--")
+ax.axvline(50, linestyle="--")
+
+ax.scatter(x, y, s=180, color="#1F4E79")
+
+ax.set_xlim(0,100)
+ax.set_ylim(0,100)
+
+ax.set_xlabel("Visão & Influência")
+ax.set_ylabel("Execução & Consistência")
+
+ax.text(75,85,"Líder Estratégico", ha="center", fontsize=9)
+ax.text(25,85,"Executor Técnico", ha="center", fontsize=9)
+ax.text(25,15,"Zona de Desenvolvimento", ha="center", fontsize=9)
+ax.text(75,15,"Perfil Adaptativo", ha="center", fontsize=9)
+
+st.pyplot(fig)
+
+# Explicação
+st.info("""
+**Como interpretar**
+
+🔵 Executor Técnico → forte execução, menor influência  
+🟢 Líder Estratégico → visão + execução elevadas  
+🟠 Zona de Desenvolvimento → foco em evolução  
+🟣 Perfil Adaptativo → flexível e explorador  
+""")
+
+
+st.markdown("## Benchmark Populacional")
+
+for k, v in s.items():
+    user = v if k != "N" else 100 - v
+    pop = 50  # média populacional
+
+    diff = user - pop
+
+    st.write(f"**{PILLAR_NAMES[k]}**")
+
+    col1, col2 = st.columns(2)
+    col1.metric("Você", f"{user}")
+    col2.metric("População", f"{pop}", delta=f"{diff:+}")
+
+    st.progress(user/100)
+
+
 
