@@ -78,6 +78,16 @@ if not st.session_state.auth:
     st.stop()
 
 
+st.markdown("### Behavioral Archetype")
+
+st.markdown(f"""
+<div class="card">
+<h3>{ptype}</h3>
+<p>{pdesc}</p>
+</div>
+""", unsafe_allow_html=True)
+
+
 def personality_type(s):
     if s["O"]>=70 and s["E"]>=60:
         return "Explorer","Curioso, inovador e orientado à exploração."
@@ -233,26 +243,41 @@ for k,v in s.items():
 
 
 
-def gerar_pdf(name,s,analysis):
+def gerar_pdf_premium(name,s,analysis):
+
     buffer=io.BytesIO()
     c=canvas.Canvas(buffer,pagesize=A4)
     w,h=A4
-    c.setFont("Helvetica-Bold",18)
-    c.drawString(2*cm,h-3*cm,"Relatório de Perfil")
-    y=h-5*cm
+
+    primary=colors.HexColor("#1F4E79")
+
+    # Capa
+    c.setFillColor(primary)
+    c.setFont("Helvetica-Bold",20)
+    c.drawCentredString(w/2,h-3*cm,"Executive Personality Report")
+    c.setFont("Helvetica",12)
+    c.drawCentredString(w/2,h-4*cm,name)
+
+    # Scores
+    y=h-6*cm
     for k,v in s.items():
-        c.drawString(2*cm,y,f"{k}:{v}")
+        c.drawString(2*cm,y,f"{k}: {v}")
         y-=0.7*cm
+
     c.showPage()
+
+    # IA
     text=c.beginText(2*cm,h-3*cm)
     for line in analysis.split("\n"):
         text.textLine(line)
     c.drawText(text)
+
     c.save()
     buffer.seek(0)
     return buffer
 
 if "analysis" in st.session_state:
-    pdf=gerar_pdf(name,s,st.session_state.analysis)
-    st.download_button("Baixar PDF",pdf,file_name="perfil.pdf")
+    pdf=gerar_pdf_premium(name,s,st.session_state.analysis)
+    st.download_button("Download Premium Report (PDF)",pdf,file_name="executive_profile.pdf")
+Fti
 
