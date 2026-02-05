@@ -11,6 +11,9 @@ from reportlab.lib.pagesizes import A4
 from reportlab.pdfgen import canvas
 from reportlab.lib.units import cm
 
+
+
+
 # GPT opcional
 try:
     from openai import OpenAI
@@ -18,8 +21,21 @@ try:
 except:
     GPT_AVAILABLE = False
 
-import math
+import pandas as pd
+from streamlit_gsheets import GSheetsConnection
+from datetime import datetime
 
+# Conexão Google Sheets
+conn = st.connection("gsheets", type=GSheetsConnection)
+SHEET_URL = st.secrets["gsheets"]["spreadsheet"]
+
+if "scores" in st.session_state:
+
+# Salvar apenas 1 vez
+if "saved" not in st.session_state:
+    save_result(name, s)
+    st.session_state.saved = True
+ 
 # Percentil baseado em curva normal (Big Five padrão)
 def percentile(score, mean=50, std=15):
     z = (score - mean) / std
@@ -246,6 +262,31 @@ else:
     st.session_state.scores = scores
 
 
+def save_result(name, scores):
+
+    try:
+        df_existing = conn.read(spreadsheet=SHEET_URL)
+
+        new_row = pd.DataFrame([{
+            "Timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            "Nome": name,
+            "O": scores["O"],
+            "C": scores["C"],
+            "E": scores["E"],
+            "A": scores["A"],
+            "N": scores["N"],
+        }])
+
+        df_updated = pd.concat([df_existing, new_row], ignore_index=True)
+
+        conn.update(
+            spreadsheet=SHEET_URL,
+            data=df_updated
+        )
+
+    except Exception as e:
+        st.warning("Não foi possível salvar no Google Sheets.")
+
 
 # -----------------------------------------------------
 # RESULTADOS
@@ -320,52 +361,56 @@ if "scores" in st.session_state:
 # BENCHMARK PROFISSIONAL
 # -----------------------------------------------------
 if "scores" in st.session_state:
+# Salvar apenas 1 vez
+if "saved" not in st.session_state:
+    save_result(name, s)
+    st.session_state.saved = True
 
+    
     s = st.session_state.scores
 
-    st.markdown("## 📊 Benchmark Psicométrico Profissional")
+st.markdown("## 📊 Benchmark Real vs População")
 
-    import math
+try:
+    df_pop = conn.read(spreadsheet=SHEET_URL)
 
-    def percentile(score, mean=50, std=15):
-        z = (score - mean) / std
-        p = 0.5 * (1 + math.erf(z / math.sqrt(2)))
-        return round(p * 100, 1)
+    FULL_NAMES = {
+        "O": "Abertura à Experiência",
+        "C": "Conscienciosidade",
+        "E": "Extroversão",
+        "A": "Amabilidade",
+        "N": "Estabilidade Emocional"
+    }
 
-    def level_class(score):
-        if score >= 85:
-            return "Muito Alto"
-        elif score >= 70:
-            return "Alto"
-        elif score >= 40:
-            return "Médio"
-        elif score >= 25:
-            return "Baixo"
+    for k in ["O","C","E","A","N"]:
+
+        user = s[k] if k != "N" else 100 - s[k]
+
+        pop_mean = df_pop[k].mean()
+        pop_std = df_pop[k].std()
+
+        if pop_std == 0 or pd.isna(pop_std):
+            percentile = 50
         else:
-            return "Muito Baixo"
+            z = (user - pop_mean) / pop_std
+            from math import erf, sqrt
+            percentile = round((0.5 * (1 + erf(z / sqrt(2)))) * 100, 1)
 
-    dominant_trait = max(
-        s,
-        key=lambda k: (s[k] if k != "N" else 100 - s[k])
-    )
-
-    for k, v in s.items():
-
-        user = v if k != "N" else 100 - v
-        pctl = percentile(user)
-        lvl = level_class(user)
-
-        st.markdown(f"### {PILLAR_NAMES[k]}")
+        st.markdown(f"### {FULL_NAMES[k]}")
 
         col1, col2, col3 = st.columns(3)
 
-        col1.metric("Seu Score", f"{round(user,1)}")
-        col2.metric("Percentil", f"{pctl}%")
-        col3.metric("Classificação", lvl)
+        col1.metric("Você", round(user,1))
+        col2.metric("Média Pop.", round(pop_mean,1))
+        col3.metric("Percentil", f"{percentile}%")
 
         st.progress(user/100)
 
         st.divider()
+
+except:
+    st.info("Benchmark aparecerá após acumular dados reais.")
+
 
 
 st.markdown("## 📉 Distribuição Populacional (Curva Normal Simulada)")
