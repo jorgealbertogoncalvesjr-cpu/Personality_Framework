@@ -316,45 +316,57 @@ if "scores" in st.session_state:
     # =========================
     # BENCHMARK
     # =========================
-  st.markdown("## 📊 Benchmark Psicométrico Profissional")
+# -----------------------------------------------------
+# BENCHMARK PROFISSIONAL
+# -----------------------------------------------------
+if "scores" in st.session_state:
 
-dominant_trait = max(s, key=lambda k: (s[k] if k != "N" else 100 - s[k]))
+    s = st.session_state.scores
 
-for k, v in s.items():
+    st.markdown("## 📊 Benchmark Psicométrico Profissional")
 
-    user = v if k != "N" else 100 - v
-    pctl = percentile(user)
-    lvl = level_class(user)
+    import math
 
-    st.markdown(f"### {PILLAR_NAMES[k]}")
+    def percentile(score, mean=50, std=15):
+        z = (score - mean) / std
+        p = 0.5 * (1 + math.erf(z / math.sqrt(2)))
+        return round(p * 100, 1)
 
-    col1, col2, col3 = st.columns(3)
+    def level_class(score):
+        if score >= 85:
+            return "Muito Alto"
+        elif score >= 70:
+            return "Alto"
+        elif score >= 40:
+            return "Médio"
+        elif score >= 25:
+            return "Baixo"
+        else:
+            return "Muito Baixo"
 
-    col1.metric("Seu Score", f"{round(user,1)}")
-    col2.metric("Percentil", f"{pctl}%")
-    col3.metric("Classificação", lvl)
+    dominant_trait = max(
+        s,
+        key=lambda k: (s[k] if k != "N" else 100 - s[k])
+    )
 
-    st.progress(user/100)
+    for k, v in s.items():
 
-    st.caption(f"Leitura psicológica: {interpret_trait(PILLAR_NAMES[k], user)}")
+        user = v if k != "N" else 100 - v
+        pctl = percentile(user)
+        lvl = level_class(user)
 
-    st.divider()
+        st.markdown(f"### {PILLAR_NAMES[k]}")
 
-st.markdown("## 🧠 Leitura Psicológica Global")
+        col1, col2, col3 = st.columns(3)
 
-dom_score = s[dominant_trait] if dominant_trait != "N" else 100 - s[dominant_trait]
+        col1.metric("Seu Score", f"{round(user,1)}")
+        col2.metric("Percentil", f"{pctl}%")
+        col3.metric("Classificação", lvl)
 
-st.success(f"Traço dominante: **{PILLAR_NAMES[dominant_trait]}**")
+        st.progress(user/100)
 
-st.write(f"""
-Seu perfil apresenta maior predominância em **{PILLAR_NAMES[dominant_trait]}**, 
-indicando **{level_class(dom_score).lower()} expressão** deste traço.
+        st.divider()
 
-Isso sugere tendência comportamental voltada a:
-- Tomada de decisão alinhada ao traço dominante
-- Estilo psicológico relativamente consistente
-- Padrão emocional previsível
-""")
 
 st.markdown("## 📉 Distribuição Populacional (Curva Normal Simulada)")
 
