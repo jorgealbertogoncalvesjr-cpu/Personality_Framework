@@ -157,44 +157,28 @@ else:
 
 
 # -----------------------------------------------------
-# RESULTADOS
+# RESULTAD
 # -----------------------------------------------------
 if "scores" in st.session_state:
 
     s = st.session_state.scores
 
- st.markdown("### Executive Snapshot")
+    # =========================
+    # EXECUTIVE SNAPSHOT
+    # =========================
+    st.markdown("### Executive Snapshot")
 
-col1, col2 = st.columns(2)
+    col1, col2 = st.columns(2)
 
-with col1:
-    st.metric("Estilo Cognitivo (Abertura)", s["O"])
-    st.metric("Capacidade de Execução (Conscienciosidade)", s["C"])
+    with col1:
+        st.metric("Estilo Cognitivo (Abertura)", s["O"])
+        st.metric("Execução (Conscienciosidade)", s["C"])
 
-with col2:
-    st.metric("Energia Social (Extroversão)", s["E"])
-    st.metric("Cooperação (Amabilidade)", s["A"])
+    with col2:
+        st.metric("Energia Social (Extroversão)", s["E"])
+        st.metric("Cooperação (Amabilidade)", s["A"])
 
-st.metric("Estabilidade Emocional", 100 - s["N"])
-
-
-    name = st.text_input("Nome para relatório","Participante")
-
-    # Radar
-    labels=["Abertura","Conscienciosidade","Extroversão","Amabilidade","Neuroticismo"]
-    values=list(s.values())+[list(s.values())[0]]
-    angles=np.linspace(0,2*np.pi,5,endpoint=False).tolist()
-    angles+=angles[:1]
-
-    fig=plt.figure(figsize=(5,5))
-    ax=plt.subplot(polar=True)
-    ax.plot(angles,values,color="#1F4E79",linewidth=2)
-    ax.fill(angles,values,alpha=0.25,color="#2E86C1")
-    ax.set_xticks(angles[:-1])
-    ax.set_xticklabels(labels,fontsize=9)
-    ax.set_yticks([20,40,60,80,100])
-    ax.set_title("Behavioral DNA",fontsize=12)
-    st.pyplot(fig)
+    st.metric("Estabilidade Emocional", 100 - s["N"])
 
     # MATRIZ
  # =========================
