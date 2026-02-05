@@ -141,54 +141,62 @@ if "step" not in st.session_state:
 st.progress(st.session_state.step / 5)
 
 # -----------------------------------------------------
-# ETAPAS
+# ETAPAS DO QUESTIONÁRIO (UX EM 5 PASSOS)
 # -----------------------------------------------------
+
 if st.session_state.step < 5:
+
     p = pillars[st.session_state.step]
     st.subheader(PILLAR_NAMES[p])
 
+    # Perguntas do pilar atual
     for qid, text, _ in QUESTIONS[p]:
         st.slider(text, 1, 5, 3, key=qid)
 
-    c1, c2 = st.columns(2)
-    if c1.button("⬅ Voltar") and st.session_state.step > 0:
-        st.session_state.step -= 1
-        st.rerun()
-    if c2.button("Próximo ➡"):
-        st.session_state.step += 1
-        st.rerun()
+    col1, col2 = st.columns(2)
+
+    with col1:
+        if st.button("⬅ Voltar") and st.session_state.step > 0:
+            st.session_state.step -= 1
+            st.rerun()
+
+    with col2:
+        if st.button("Próximo ➡"):
+            st.session_state.step += 1
+            st.rerun()
 
 else:
- # -------------------------------------------------
-# CÁLCULO DOS SCORES (0–100) — SEGURO
-# -------------------------------------------------
-scores = {}
 
-for p in QUESTIONS:
+    # -------------------------------------------------
+    # CÁLCULO DOS SCORES (0–100) — BLOCO CORRETO
+    # -------------------------------------------------
+    scores = {}
 
-    vals = []
-    answered = 0
+    for p in QUESTIONS:
 
-    for qid, _, rev in QUESTIONS[p]:
+        vals = []
+        answered = 0
 
-        if qid in st.session_state:
-            v = st.session_state[qid]
-            answered += 1
+        for qid, _, rev in QUESTIONS[p]:
+
+            if qid in st.session_state:
+                v = st.session_state[qid]
+                answered += 1
+            else:
+                continue
+
+            if rev:
+                v = 6 - v
+
+            vals.append(v)
+
+        if answered == 0:
+            scores[p] = 0
         else:
-            continue
+            raw = sum(vals) / answered
+            scores[p] = round((raw - 1) / 4 * 100, 1)
 
-        if rev:
-            v = 6 - v
-
-        vals.append(v)
-
-    if answered == 0:
-        scores[p] = 0
-    else:
-        raw = sum(vals) / answered   # média real
-        scores[p] = round((raw - 1) / 4 * 100, 1)
-
-st.session_state.scores = scores
+    st.session_state.scores = scores
 
 
 
