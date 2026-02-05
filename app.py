@@ -110,69 +110,50 @@ if "step" not in st.session_state:
 st.progress(st.session_state.step/5)
 
 # -----------------------------------------------------
-# ETAPAS
+# ETAPAS DO QUESTIONÁRIO (UX EM 5 PASSOS)
 # -----------------------------------------------------
+
 if st.session_state.step < 5:
 
     p = pillars[st.session_state.step]
-    PILLAR_NAMES = {
-    "O": "Abertura à Experiência (Openness)",
-    "C": "Conscienciosidade (Execução & Disciplina)",
-    "E": "Extroversão (Energia Social)",
-    "A": "Amabilidade (Cooperação & Empatia)",
-    "N": "Estabilidade Emocional (Neuroticismo)"
-}
+    st.subheader(PILLAR_NAMES[p])
 
-st.subheader(PILLAR_NAMES[p])
+    # Perguntas do pilar atual
+    for qid, text, _ in QUESTIONS[p]:
+        st.slider(text, 1, 5, 3, key=qid)
 
-    for qid,text,_ in QUESTIONS[p]:
-        st.slider(text,1,5,3,key=qid)
+    col1, col2 = st.columns(2)
 
-    col1,col2 = st.columns(2)
+    with col1:
+        if st.button("⬅ Voltar") and st.session_state.step > 0:
+            st.session_state.step -= 1
+            st.rerun()
 
-    if col1.button("Voltar") and st.session_state.step>0:
-        st.session_state.step -= 1
-        st.rerun()
+    with col2:
+        if st.button("Próximo ➡"):
+            st.session_state.step += 1
+            st.rerun()
 
-    if col2.button("Próximo"):
-        st.session_state.step += 1
-        st.rerun()
-
-# -----------------------------------------------------
-# SCORE
-# -----------------------------------------------------
 else:
-
+    # -------------------------------------------------
+    # CÁLCULO DOS SCORES (0–100)
+    # -------------------------------------------------
     scores = {}
 
     for p in QUESTIONS:
         vals = []
 
         for qid, _, rev in QUESTIONS[p]:
-
-            # Evita KeyError (caso usuário não respondeu ainda)
-            v = st.session_state.get(qid, 3)
+            v = st.session_state.get(qid, 3)  # evita KeyError
 
             if rev:
                 v = 6 - v
 
             vals.append(v)
 
-        # Normalização 0–100
         scores[p] = round((sum(vals) - 7) / 28 * 100, 1)
 
     st.session_state.scores = scores
-
-ptype, pdesc = personality_type(s)
-
-st.markdown(f"""
-<h1 style='text-align:center; font-size:32px; color:#1F4E79'>
-Perfil Comportamental: {ptype}
-</h1>
-<p style='text-align:center; font-size:16px'>
-{pdesc}
-</p>
-""", unsafe_allow_html=True)
 
 
 # -----------------------------------------------------
