@@ -215,4 +215,141 @@ if "scores" in st.session_state:
     except:
         st.info("Benchmark aparecerá após acumular dados.")
 
+st.markdown("## 🧬 Radar Comportamental")
+
+labels = ["Abertura","Execução","Energia Social","Cooperação","Estabilidade"]
+
+user_vals = [
+    s["O"],
+    s["C"],
+    s["E"],
+    s["A"],
+    100 - s["N"]
+]
+
+try:
+    df_pop = conn.read(spreadsheet=SHEET_URL)
+    pop_vals = [
+        df_pop["O"].mean(),
+        df_pop["C"].mean(),
+        df_pop["E"].mean(),
+        df_pop["A"].mean(),
+        100 - df_pop["N"].mean()
+    ]
+except:
+    pop_vals = [50,50,50,50,50]
+
+angles = np.linspace(0, 2*np.pi, len(labels), endpoint=False).tolist()
+user_vals += user_vals[:1]
+pop_vals += pop_vals[:1]
+angles += angles[:1]
+
+fig = plt.figure(figsize=(5,5))
+ax = plt.subplot(polar=True)
+ax.plot(angles, user_vals, linewidth=2, label="Você")
+ax.plot(angles, pop_vals, linestyle="--", label="População")
+ax.fill(angles, user_vals, alpha=0.1)
+ax.set_xticks(angles[:-1])
+ax.set_xticklabels(labels)
+ax.set_yticks([20,40,60,80])
+ax.legend(loc="upper right")
+
+st.pyplot(fig)
+
+st.markdown("## 📊 Percentil Psicométrico")
+
+for k in ["O","C","E","A","N"]:
+    user = s[k] if k != "N" else 100 - s[k]
+    p = percentile(user)
+
+    st.write(f"**{PILLAR_NAMES[k]}**")
+    st.metric("Score", round(user,1))
+    st.metric("Percentil", f"{p}%")
+    st.progress(p/100)
+    st.divider()
+
+
+
+st.markdown("## 📉 Distribuição Psicométrica")
+
+x_vals = np.linspace(0,100,400)
+mean = 50
+std = 15
+y_vals = (1/(std*np.sqrt(2*np.pi))) * np.exp(-((x_vals-mean)**2)/(2*std**2))
+
+fig, ax = plt.subplots(figsize=(6,3))
+ax.plot(x_vals, y_vals)
+
+for k,v in s.items():
+    user = v if k!="N" else 100-v
+    ax.axvline(user, linestyle="--")
+
+ax.set_yticks([])
+ax.set_xlabel("Score")
+ax.set_title("Posição relativa na população")
+
+st.pyplot(fig)
+
+st.markdown("## 🧠 Arquétipo Psicológico Dominante")
+
+dominant = max(s, key=s.get)
+
+arch_map = {
+    "O": "Explorer — curioso, criativo e aberto a experiências",
+    "C": "Executor — disciplinado, consistente e orientado a metas",
+    "E": "Influencer — social, energético e comunicativo",
+    "A": "Diplomat — cooperativo, empático e harmonizador",
+    "N": "Sentinel — sensível ao ambiente emocional"
+}
+
+st.success(arch_map[dominant])
+
+
+st.markdown("## 🧩 Índice de Consistência Psicológica")
+
+std_dev = np.std(list(s.values()))
+
+if std_dev < 8:
+    st.success("Perfil consistente e estável")
+elif std_dev < 15:
+    st.info("Perfil equilibrado")
+else:
+    st.warning("Perfil heterogêneo — possível variabilidade comportamental")
+
+st.metric("Índice de consistência", round(100-std_dev*3,1))
+
+st.markdown("## 📄 Relatório Executivo")
+
+from reportlab.pdfgen import canvas
+import io
+
+def gerar_pdf_profissional(name, s):
+
+    buffer = io.BytesIO()
+    c = canvas.Canvas(buffer, pagesize=A4)
+    w,h = A4
+
+    c.setFont("Helvetica-Bold",18)
+    c.drawString(2*cm,h-3*cm,"Executive Personality Report")
+
+    c.setFont("Helvetica",12)
+    c.drawString(2*cm,h-4*cm,f"Nome: {name}")
+
+    y = h-6*cm
+    for k,v in s.items():
+        c.drawString(2*cm,y,f"{PILLAR_NAMES[k]}: {round(v,1)}")
+        y -= 0.7*cm
+
+    c.save()
+    buffer.seek(0)
+    return buffer
+
+pdf = gerar_pdf_profissional(name, s)
+
+st.download_button(
+    "Baixar Relatório PDF",
+    pdf,
+    file_name="executive_profile.pdf"
+)
+
 
