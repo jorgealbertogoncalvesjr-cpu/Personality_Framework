@@ -184,29 +184,27 @@ else:
     # CÁLCULO DOS SCORES (0–100) — BLOCO CORRETO
     # -------------------------------------------------
 
-
+if st.session_state.step < 5:
+    # perguntas
+else:
     scores = {}
 
-for p in QUESTIONS:
+    for p in QUESTIONS:
 
-    vals = []
+        vals = []
 
-    for qid, _, rev in QUESTIONS[p]:
+        for qid, _, rev in QUESTIONS[p]:
+            v = st.session_state.get(qid, 3)
 
-        v = st.session_state.get(qid, 3)
+            if rev:
+                v = 6 - v
 
-        if rev:
-            v = 6 - v
+            vals.append(v)
 
-        vals.append(v)
-
-    raw = sum(vals) / len(vals)
-    scores[p] = round((raw - 1) / 4 * 100, 1)
-
-            scores[p] = round((raw - 1) / 4 * 100, 1)
+        raw = sum(vals) / len(vals)
+        scores[p] = round((raw - 1) / 4 * 100, 1)
 
     st.session_state.scores = scores
-
 
 
 # -----------------------------------------------------
