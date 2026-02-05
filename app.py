@@ -151,7 +151,18 @@ if st.session_state.step < 5:
 
     # Perguntas do pilar atual
     for qid, text, _ in QUESTIONS[p]:
-        st.slider(text, 1, 5, 3, key=qid)
+        for qid, text, _ in QUESTIONS[p]:
+
+    if qid not in st.session_state:
+        st.session_state[qid] = 3   # valor padrão neutro
+
+    st.slider(
+        text,
+        min_value=1,
+        max_value=5,
+        key=qid
+    )
+
 
     col1, col2 = st.columns(2)
 
@@ -170,30 +181,26 @@ else:
     # -------------------------------------------------
     # CÁLCULO DOS SCORES (0–100) — BLOCO CORRETO
     # -------------------------------------------------
+
+
     scores = {}
 
-    for p in QUESTIONS:
+for p in QUESTIONS:
 
-        vals = []
-        answered = 0
+    vals = []
 
-        for qid, _, rev in QUESTIONS[p]:
+    for qid, _, rev in QUESTIONS[p]:
 
-            if qid in st.session_state:
-                v = st.session_state[qid]
-                answered += 1
-            else:
-                continue
+        v = st.session_state.get(qid, 3)
 
-            if rev:
-                v = 6 - v
+        if rev:
+            v = 6 - v
 
-            vals.append(v)
+        vals.append(v)
 
-        if answered == 0:
-            scores[p] = 0
-        else:
-            raw = sum(vals) / answered
+    raw = sum(vals) / len(vals)
+    scores[p] = round((raw - 1) / 4 * 100, 1)
+
             scores[p] = round((raw - 1) / 4 * 100, 1)
 
     st.session_state.scores = scores
