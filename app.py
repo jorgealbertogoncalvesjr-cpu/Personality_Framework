@@ -123,7 +123,7 @@ A interpretação é processada por algoritmo proprietário.
 
 # -----------------------------------------------------
 # LANDING PÓS LOGIN
-# -----------------------------------------------------
+# ----------------------------------------------------
 st.markdown("## 🧠 Avaliação de Perfil Comportamental")
 
 st.markdown("""
@@ -464,6 +464,95 @@ if "scores" in st.session_state:
 """
     st.markdown(interp)
 
+# =====================================================
+# PARTE 4 — GPT PERSONALITY ANALYSIS
+# =====================================================
+
+from openai import OpenAI
+
+if "scores" in st.session_state:
+
+    st.divider()
+    st.markdown("## 🤖 Análise Psicológica Personalizada")
+
+    client = OpenAI(api_key=st.secrets["OPENAI_API_KEY"])
+
+    scores = st.session_state.scores
+    name = st.session_state.get("user_name", "Participante")
+
+    def build_prompt(name, scores):
+        return f"""
+Você é um psicólogo comportamental especializado no modelo Big Five.
+
+Gere uma análise personalizada, clara e envolvente para o usuário abaixo.
+
+Nome: {name}
+
+Pontuações (0-100):
+Abertura: {scores['O']}
+Conscienciosidade: {scores['C']}
+Extroversão: {scores['E']}
+Amabilidade: {scores['A']}
+Neuroticismo: {scores['N']}
+
+Estrutura da resposta:
+
+1. Resumo geral do perfil
+2. Como essa pessoa pensa e toma decisões
+3. Estilo emocional e reação ao estresse
+4. Como se comporta socialmente
+5. Pontos fortes naturais
+6. Pontos de atenção
+7. Sugestões práticas de desenvolvimento pessoal
+
+Tom:
+- Positivo e construtivo
+- Profissional, porém acessível
+- Evitar termos clínicos pesados
+- Máx 400 palavras
+"""
+
+    # Botão para gerar (evita chamadas repetidas)
+    if st.button("Gerar análise personalizada com IA"):
+
+        with st.spinner("Gerando análise psicológica personalizada..."):
+
+            try:
+                response = client.chat.completions.create(
+                    model="gpt-4o-mini",
+                    messages=[
+                        {"role": "system", "content": "Você é um especialista em psicologia comportamental."},
+                        {"role": "user", "content": build_prompt(name, scores)}
+                    ],
+                    temperature=0.7,
+                    max_tokens=700
+                )
+
+                analysis = response.choices[0].message.content
+                st.session_state.gpt_analysis = analysis
+
+            except Exception as e:
+                st.error("Erro ao gerar análise com IA.")
+                st.exception(e)
+
+    # Mostrar se já gerado
+    if "gpt_analysis" in st.session_state:
+        st.markdown("### 🧠 Seu Perfil Interpretado pela IA")
+        st.write(st.session_state.gpt_analysis)
+
+        # Download TXT (pode virar PDF depois)
+        st.download_button(
+            "📄 Baixar análise personalizada",
+            data=st.session_state.gpt_analysis.encode("utf-8"),
+            file_name=f"Analise_Personalizada_{name}.txt",
+            mime="text/plain"
+        )
+
+
+
+
+
+    
     # -------------------------------------------------
     # 4) PONTOS FORTES & ATENÇÃO
     # -------------------------------------------------
