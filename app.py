@@ -150,11 +150,12 @@ if st.session_state.step < 5:
     st.subheader(PILLAR_NAMES[p])
 
     # Perguntas do pilar atual
-    for qid, text, _ in QUESTIONS[p]:
-        for qid, text, _ in QUESTIONS[p]:
+  # Perguntas do pilar atual
+for qid, text, _ in QUESTIONS[p]:
 
+    # garante persistência
     if qid not in st.session_state:
-        st.session_state[qid] = 3   # valor padrão neutro
+        st.session_state[qid] = 3
 
     st.slider(
         text,
@@ -162,6 +163,7 @@ if st.session_state.step < 5:
         max_value=5,
         key=qid
     )
+
 
 
     col1, col2 = st.columns(2)
