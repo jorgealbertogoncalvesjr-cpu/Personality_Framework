@@ -18,6 +18,42 @@ try:
 except:
     GPT_AVAILABLE = False
 
+import math
+
+# Percentil baseado em curva normal (Big Five padrão)
+def percentile(score, mean=50, std=15):
+    z = (score - mean) / std
+    p = 0.5 * (1 + math.erf(z / math.sqrt(2)))
+    return round(p * 100, 1)
+
+# Classificação psicológica
+def level_class(score):
+    if score >= 85:
+        return "Muito Alto"
+    elif score >= 70:
+        return "Alto"
+    elif score >= 40:
+        return "Médio"
+    elif score >= 25:
+        return "Baixo"
+    else:
+        return "Muito Baixo"
+
+# Interpretação resumida
+def interpret_trait(name, score):
+    lvl = level_class(score)
+
+    text_map = {
+        "Muito Alto": "forte dominância comportamental",
+        "Alto": "tendência acima da média",
+        "Médio": "equilíbrio psicológico",
+        "Baixo": "tendência moderadamente reduzida",
+        "Muito Baixo": "baixa expressão do traço"
+    }
+
+    return f"{lvl} — {text_map[lvl]}"
+
+
 # -----------------------------------------------------
 # CONFIG
 # -----------------------------------------------------
@@ -280,17 +316,66 @@ if "scores" in st.session_state:
     # =========================
     # BENCHMARK
     # =========================
-   st.markdown("## Benchmark Populacional")
+  st.markdown("## 📊 Benchmark Psicométrico Profissional")
+
+dominant_trait = max(s, key=lambda k: (s[k] if k != "N" else 100 - s[k]))
 
 for k, v in s.items():
 
     user = v if k != "N" else 100 - v
     pctl = percentile(user)
+    lvl = level_class(user)
 
-    st.write(f"**{PILLAR_NAMES[k]}**")
+    st.markdown(f"### {PILLAR_NAMES[k]}")
 
-    col1, col2 = st.columns(2)
-    col1.metric("Seu Score", f"{user}")
+    col1, col2, col3 = st.columns(3)
+
+    col1.metric("Seu Score", f"{round(user,1)}")
     col2.metric("Percentil", f"{pctl}%")
+    col3.metric("Classificação", lvl)
 
     st.progress(user/100)
+
+    st.caption(f"Leitura psicológica: {interpret_trait(PILLAR_NAMES[k], user)}")
+
+    st.divider()
+
+st.markdown("## 🧠 Leitura Psicológica Global")
+
+dom_score = s[dominant_trait] if dominant_trait != "N" else 100 - s[dominant_trait]
+
+st.success(f"Traço dominante: **{PILLAR_NAMES[dominant_trait]}**")
+
+st.write(f"""
+Seu perfil apresenta maior predominância em **{PILLAR_NAMES[dominant_trait]}**, 
+indicando **{level_class(dom_score).lower()} expressão** deste traço.
+
+Isso sugere tendência comportamental voltada a:
+- Tomada de decisão alinhada ao traço dominante
+- Estilo psicológico relativamente consistente
+- Padrão emocional previsível
+""")
+
+st.markdown("## 📉 Distribuição Populacional (Curva Normal Simulada)")
+
+import numpy as np
+import matplotlib.pyplot as plt
+
+x_vals = np.linspace(0,100,400)
+mean = 50
+std = 15
+y_vals = (1/(std*np.sqrt(2*np.pi))) * np.exp(-((x_vals-mean)**2)/(2*std**2))
+
+fig, ax = plt.subplots(figsize=(6,3))
+ax.plot(x_vals, y_vals)
+
+for k,v in s.items():
+    user = v if k!="N" else 100-v
+    ax.axvline(user, linestyle="--")
+
+ax.set_title("Posição relativa vs população")
+ax.set_yticks([])
+ax.set_xlabel("Score")
+
+st.pyplot(fig)
+
