@@ -150,21 +150,17 @@ if st.session_state.step < 5:
     st.subheader(PILLAR_NAMES[p])
 
     # Perguntas do pilar atual
-  # Perguntas do pilar atual
-for qid, text, _ in QUESTIONS[p]:
+    for qid, text, _ in QUESTIONS[p]:
 
-    # garante persistência
-    if qid not in st.session_state:
-        st.session_state[qid] = 3
+        if qid not in st.session_state:
+            st.session_state[qid] = 3
 
-    st.slider(
-        text,
-        min_value=1,
-        max_value=5,
-        key=qid
-    )
-
-
+        st.slider(
+            text,
+            min_value=1,
+            max_value=5,
+            key=qid
+        )
 
     col1, col2 = st.columns(2)
 
@@ -181,12 +177,8 @@ for qid, text, _ in QUESTIONS[p]:
 else:
 
     # -------------------------------------------------
-    # CÁLCULO DOS SCORES (0–100) — BLOCO CORRETO
+    # CÁLCULO DOS SCORES (0–100)
     # -------------------------------------------------
-
-if st.session_state.step < 5:
-    # perguntas
-else:
     scores = {}
 
     for p in QUESTIONS:
@@ -194,6 +186,7 @@ else:
         vals = []
 
         for qid, _, rev in QUESTIONS[p]:
+
             v = st.session_state.get(qid, 3)
 
             if rev:
@@ -205,6 +198,7 @@ else:
         scores[p] = round((raw - 1) / 4 * 100, 1)
 
     st.session_state.scores = scores
+
 
 
 # -----------------------------------------------------
