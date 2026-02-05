@@ -135,21 +135,26 @@ if st.session_state.step < 5:
 # -----------------------------------------------------
 else:
 
-scores = {}
-for p in QUESTIONS:
-    vals = []
-    for qid, _, rev in QUESTIONS[p]:
+    scores = {}
 
-        v = st.session_state.get(qid, 3)   # ← CORREÇÃO AQUI
+    for p in QUESTIONS:
+        vals = []
 
-        if rev:
-            v = 6 - v
+        for qid, _, rev in QUESTIONS[p]:
 
-        vals.append(v)
+            # Evita KeyError (caso usuário não respondeu ainda)
+            v = st.session_state.get(qid, 3)
 
-    scores[p] = round((sum(vals) - 7) / 28 * 100, 1)
+            if rev:
+                v = 6 - v
 
-st.session_state.scores = scores
+            vals.append(v)
+
+        # Normalização 0–100
+        scores[p] = round((sum(vals) - 7) / 28 * 100, 1)
+
+    st.session_state.scores = scores
+
 
 
 # -----------------------------------------------------
