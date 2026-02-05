@@ -20,13 +20,47 @@ PASSWORD = "1618"
 
 
 
+# =========================
+# UI PREMIUM — THEME
+# =========================
 st.markdown("""
 <style>
-.block-container { max-width:720px; padding:1rem; }
-h1,h2,h3 { text-align:center; }
-button { width:100%; font-size:18px; }
+:root {
+  --primary:#1F4E79;
+  --accent:#2E86C1;
+  --bg:#F4F6F8;
+  --text:#1C2833;
+}
+
+.block-container { max-width:760px; padding:1rem; }
+h1,h2,h3 { text-align:center; color:var(--primary); }
+
+.card {
+  background:white;
+  border-radius:14px;
+  padding:18px 20px;
+  margin:12px 0;
+  box-shadow:0 4px 14px rgba(0,0,0,0.06);
+}
+
+.kpi {
+  text-align:center;
+  padding:12px;
+  border-radius:12px;
+  background:linear-gradient(180deg,#FFFFFF,#F7FAFC);
+  border:1px solid #E5E9F0;
+}
+
+button { width:100%; font-size:17px; border-radius:10px; }
+.small { font-size:12px; color:#6B7280; text-align:center; }
+
+@media (max-width:768px){
+  h1{font-size:1.6rem}
+  h2{font-size:1.3rem}
+}
 </style>
 """, unsafe_allow_html=True)
+
 
 
 if "auth" not in st.session_state:
@@ -122,46 +156,80 @@ else:
 
 
 if "scores" in st.session_state:
+    
+# =========================
+# KPIs EXECUTIVOS
+# =========================
+st.markdown("### Executive Snapshot")
 
-    s=st.session_state.scores
+c1,c2,c3,c4,c5 = st.columns(5)
+for col,(k,v) in zip([c1,c2,c3,c4,c5], s.items()):
+    with col:
+        st.markdown(f"""
+        <div class="kpi">
+        <b>{k}</b><br>
+        <span style="font-size:20px">{v}</span>
+        </div>
+        """, unsafe_allow_html=True)
+
     name=st.text_input("Nome","Participante")
 
     # Radar
-    labels=["Abertura","Conscienciosidade","Extroversão","Amabilidade","Neuroticismo"]
-    values=list(s.values())+[list(s.values())[0]]
-    angles=np.linspace(0,2*np.pi,5,endpoint=False).tolist()
-    angles+=angles[:1]
+    fig = plt.figure(figsize=(5,5))
+ax = plt.subplot(polar=True)
+ax.plot(angles, values, linewidth=2, color="#1F4E79")
+ax.fill(angles, values, alpha=0.25, color="#2E86C1")
+ax.set_xticks(angles[:-1])
+ax.set_xticklabels(labels, fontsize=9)
+ax.set_yticks([20,40,60,80,100])
+ax.set_title("Behavioral DNA", fontsize=13, pad=18)
+st.pyplot(fig)
 
-    fig=plt.figure(figsize=(5,5))
-    ax=plt.subplot(polar=True)
-    ax.plot(angles,values)
-    ax.fill(angles,values,alpha=0.2)
-    ax.set_xticks(angles[:-1])
-    ax.set_xticklabels(labels)
-    st.pyplot(fig)
 
     # MATRIZ EXECUTIVA (proxy MCA)
-    x=(s["E"]-s["N"]+100)/2
-    y=(s["C"]+s["O"])/2
+    fig2,ax2 = plt.subplots(figsize=(5,5))
+ax2.axhline(50,ls="--",lw=1,color="#C0C7D1")
+ax2.axvline(50,ls="--",lw=1,color="#C0C7D1")
+ax2.scatter(x,y,s=160,color="#1F4E79")
 
-    fig2,ax2=plt.subplots()
-    ax2.axhline(50,ls="--")
-    ax2.axvline(50,ls="--")
-    ax2.scatter(x,y,s=120)
-    ax2.set_xlim(0,100)
-    ax2.set_ylim(0,100)
-    ax2.set_title("Matriz Comportamental")
-    st.pyplot(fig2)
+ax2.set_xlim(0,100)
+ax2.set_ylim(0,100)
+ax2.set_title("Executive Positioning Matrix", fontsize=12)
+
+ax2.text(75,85,"Strategic Driver",ha="center",fontsize=8)
+ax2.text(25,85,"Operational Leader",ha="center",fontsize=8)
+ax2.text(25,15,"Stability Core",ha="center",fontsize=8)
+ax2.text(75,15,"Adaptive Explorer",ha="center",fontsize=8)
+
+st.pyplot(fig2)
+
 
     quadrant=("Q1","Q2","Q3","Q4")[(x<50)*2+(y<50)]
 
+def level(v):
+    if v>=70: return "high"
+    if v>=40: return "balanced"
+    return "developing"
 
+st.markdown("### Executive Behavioral Interpretation")
 
-ptype,pdesc=personality_type(s)
-st.success(f"{ptype} — {pdesc}")
+st.markdown(f"""
+**{name}** demonstrates a **{level(s['C'])} execution profile**,  
+combined with **{level(s['O'])} cognitive openness** and  
+**{level(s['E'])} external orientation**.
+
+From an emotional standpoint, the stability index is **{100-s['N']}**,  
+indicating a tendency toward **{'resilience' if s['N']<40 else 'moderate reactivity' if s['N']<70 else 'high sensitivity'}**.
+
+Overall, this configuration suggests a **{ptype} behavioral archetype**,  
+typically associated with **{pdesc.lower()}**.
+""")
+
+st.markdown("### Population Benchmark")
 
 for k,v in s.items():
-    st.write(k,v,percentile(v))
+    bar_color = "#1F4E79" if v>=50 else "#AAB7C4"
+    st.progress(v/100, text=f"{k} — {percentile(v)} ({v})")
 
 
 
