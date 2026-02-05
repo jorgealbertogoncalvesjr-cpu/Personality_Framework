@@ -10,16 +10,21 @@ import math
 from datetime import datetime
 from streamlit_gsheets import GSheetsConnection
 
-st.set_page_config(page_title="Executive Personality Profile", layout="centered")
-PASSWORD = "1618"
-
-
-#Google Sheets
+from streamlit_gsheets import GSheetsConnection
+import pandas as pd
+from datetime import datetime
 
 conn = st.connection("gsheets", type=GSheetsConnection)
 SHEET_URL = st.secrets["gsheets"]["spreadsheet"]
 
+st.set_page_config(page_title="Executive Personality Profile", layout="centered")
+PASSWORD = "1618"
+
+
+
+
 def save_result(name, scores):
+
     try:
         df_existing = conn.read(spreadsheet=SHEET_URL)
 
@@ -34,10 +39,14 @@ def save_result(name, scores):
         }])
 
         df_updated = pd.concat([df_existing, new_row], ignore_index=True)
-        conn.update(spreadsheet=SHEET_URL, data=df_updated)
 
-    except:
-        st.warning("Não foi possível salvar no Google Sheets.")
+        conn.update(
+            spreadsheet=SHEET_URL,
+            data=df_updated
+        )
+
+    except Exception as e:
+        st.warning("Erro ao salvar no Google Sheets.")
 
 
 
@@ -166,8 +175,8 @@ if "scores" in st.session_state:
     name = st.text_input("Nome", "Participante")
 
     if "saved" not in st.session_state:
-        save_result(name, s)
-        st.session_state.saved = True
+    save_result(name, s)
+    st.session_state.saved = True
 
     ptype, pdesc = personality_type(s)
 
