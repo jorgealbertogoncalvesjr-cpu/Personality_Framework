@@ -6,3 +6,4 @@ prince
 reportlab
 numpy
 scikit-learn
+openai>=1.0.0
