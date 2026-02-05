@@ -1,6 +1,6 @@
 # =====================================================
-# APP — PERSONALITY PROFILE (BIG FIVE / IPIP)
-# Landing + Login + Base
+# DNA COMPORTAMENTAL — BIG FIVE (IPIP)
+# Landing + Login + Front B2C
 # =====================================================
 
 import streamlit as st
@@ -14,81 +14,152 @@ st.set_page_config(
     layout="centered"
 )
 
-# -----------------------------------------------------
-# LOGIN SIMPLES
-# -----------------------------------------------------
 PASSWORD = "1618"
 
+# -----------------------------------------------------
+# ESTILO VISUAL (B2C)
+# -----------------------------------------------------
+st.markdown("""
+<style>
+.block-container {
+    padding-top: 2rem;
+}
+
+h1, h2, h3 {
+    text-align: center;
+}
+
+.big-card {
+    background-color: #f5f7fa;
+    padding: 25px;
+    border-radius: 12px;
+    margin-bottom: 20px;
+}
+
+.cta-button button {
+    background-color: #1f77b4;
+    color: white;
+    font-size: 18px;
+    padding: 0.6rem 1.2rem;
+    border-radius: 10px;
+    width: 100%;
+}
+
+.small-text {
+    font-size: 13px;
+    color: #6c757d;
+    text-align: center;
+}
+</style>
+""", unsafe_allow_html=True)
+
+# -----------------------------------------------------
+# LOGIN
+# -----------------------------------------------------
 if "auth" not in st.session_state:
     st.session_state.auth = False
 
 if not st.session_state.auth:
 
-    st.title("🧠 Descubra Seu DNA Comportamental")
+    st.markdown("## 🧠 Descubra Seu Perfil Psicológico")
 
     st.markdown("""
-### Você se conhece de verdade?
+<div class="big-card">
 
-Com base no modelo científico **Big Five (OCEAN)**, este teste revela:
+### Você realmente se conhece?
 
-- Como você pensa  
-- Como você age sob pressão  
-- Como você se relaciona  
-- Seus pontos fortes naturais  
-- Seu estilo emocional  
+Este teste analisa **5 pilares da sua personalidade** usando base científica internacional:
 
-⚡ Resultado visual + análise personalizada  
-📊 Base científica internacional  
-📄 Relatório exclusivo  
+- 🔎 Como você pensa  
+- ⚡ Como você reage sob pressão  
+- 🤝 Como você se relaciona  
+- 🎯 Seus talentos naturais  
+- 🧠 Seu padrão emocional  
 
-""")
+</div>
+""", unsafe_allow_html=True)
+
+    st.markdown("""
+<div class="big-card">
+
+### O que você recebe ao final:
+
+📊 Gráfico comportamental completo  
+🧠 Análise personalizada do seu perfil  
+🎯 Pontos fortes naturais  
+⚠️ Pontos de atenção  
+📄 Relatório visual  
+
+Tempo médio: **3 minutos**
+
+</div>
+""", unsafe_allow_html=True)
 
     senha = st.text_input("Digite a senha de acesso", type="password")
 
-    if st.button("Iniciar Avaliação"):
-        if senha == PASSWORD:
-            st.session_state.auth = True
-            st.rerun()
-        else:
-            st.error("Senha incorreta")
+    col1, col2, col3 = st.columns([1,2,1])
+    with col2:
+        if st.button("Iniciar Avaliação"):
+            if senha == PASSWORD:
+                st.session_state.auth = True
+                st.rerun()
+            else:
+                st.error("Senha incorreta")
 
-    st.caption("""
-Base científica: International Personality Item Pool (IPIP)  
+    st.markdown("""
+<div class="small-text">
+
+Base científica:  
+International Personality Item Pool (IPIP)  
 Modelo Big Five – Goldberg (1992)  
-Este app gera interpretação algorítmica proprietária.
-""")
+
+Este teste utiliza estrutura científica aberta.  
+A interpretação é processada por algoritmo proprietário.
+
+</div>
+""", unsafe_allow_html=True)
 
     st.stop()
 
 # -----------------------------------------------------
-# LANDING APÓS LOGIN
+# LANDING PÓS LOGIN
 # -----------------------------------------------------
-st.title("🧠 Avaliação de Perfil Comportamental")
+st.markdown("## 🧠 Avaliação de Perfil Comportamental")
 
 st.markdown("""
-Você responderá **35 perguntas rápidas** (menos de 3 minutos).
+<div class="big-card">
 
-Escala:
+Você responderá **35 perguntas rápidas**.
+
+Escala de resposta:
+
 1 → Discordo totalmente  
 2 → Discordo  
 3 → Neutro  
 4 → Concordo  
 5 → Concordo totalmente  
 
+</div>
+""", unsafe_allow_html=True)
+
+st.markdown("""
+<div class="big-card">
+
 Ao final você receberá:
 
-- 📊 Seu gráfico comportamental
-- 🧠 Interpretação do seu perfil
-- 🎯 Pontos fortes naturais
-- ⚠️ Pontos de atenção
-- 📄 Relatório visual
+📊 Seu gráfico comportamental  
+🧠 Interpretação do seu perfil  
+🎯 Pontos fortes  
+⚠️ Pontos de atenção  
+📄 Relatório visual  
 
-Clique abaixo para iniciar.
-""")
+</div>
+""", unsafe_allow_html=True)
 
-if st.button("Começar Teste"):
-    st.session_state.start_test = True
+col1, col2, col3 = st.columns([1,2,1])
+with col2:
+    if st.button("Começar Teste"):
+        st.session_state.start_test = True
 
-# Guardar estado
 if "start_test" not in st.session_state:
     st.session_state.start_test = False
