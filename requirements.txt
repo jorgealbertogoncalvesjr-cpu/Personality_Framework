@@ -1,8 +1,8 @@
 streamlit==1.37.0
-pandas==2.2.2
+pandas==2.2.2 --only-binary :all:
 numpy==1.26.4
 matplotlib==3.8.4
-streamlit-gsheets>=0.0.14
+streamlit-gsheets==0.0.14
 gspread==6.0.2
-openai>=1.30.0
+openai==1.51.0
 reportlab==4.2.2
