@@ -34,20 +34,20 @@ st.set_page_config(page_title="Executive Personality Profile", layout="centered"
 PASSWORD = "1618"
 
 
-
-
 def save_result(name, scores):
-    row = [
-        datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-        name,
-        scores["O"],
-        scores["C"],
-        scores["E"],
-        scores["A"],
-        scores["N"]
-    ]
-    sheet.append_row(row)
 
+    try:
+        df_existing = conn.read(spreadsheet=SHEET_URL)
+
+        new_row = pd.DataFrame([{
+            "Timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            "Nome": name,
+            "O": scores["O"],
+            "C": scores["C"],
+            "E": scores["E"],
+            "A": scores["A"],
+            "N": scores["N"],
+        }])
 
         df_updated = pd.concat([df_existing, new_row], ignore_index=True)
 
@@ -55,6 +55,11 @@ def save_result(name, scores):
             spreadsheet=SHEET_URL,
             data=df_updated
         )
+
+    except Exception as e:
+        st.warning("Não foi possível salvar no Google Sheets.")
+
+
 
     except Exception as e:
         st.warning("Erro ao salvar no Google Sheets.")
