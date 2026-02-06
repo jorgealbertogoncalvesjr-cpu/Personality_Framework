@@ -190,9 +190,12 @@ if "scores" in st.session_state:
     s = st.session_state.scores
     name = st.text_input("Nome", "Participante")
 
+    # salvar apenas uma vez
     if "saved" not in st.session_state:
-    save_result(name, s)
-    st.session_state.saved = True
+        save_result(name, s)
+        st.session_state.saved = True
+
+
 
     ptype, pdesc = personality_type(s)
 
