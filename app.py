@@ -8,12 +8,11 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import math
 from datetime import datetime
-from streamlit_gsheets import GSheetsConnection
 import pandas as pd
 from datetime import datetime
+import gspread
+from google.oauth2.service_account import Credentials
 
-conn = st.connection("gsheets", type=GSheetsConnection)
-SHEET_URL = st.secrets["gsheets"]["spreadsheet"]
 
 st.set_page_config(page_title="Executive Personality Profile", layout="centered")
 PASSWORD = "1618"
