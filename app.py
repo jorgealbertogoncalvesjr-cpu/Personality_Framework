@@ -5,13 +5,29 @@
 import streamlit as st
 import numpy as np
 import matplotlib.pyplot as plt
-import pandas as pd
 import math
 from datetime import datetime
 import pandas as pd
 from datetime import datetime
 import gspread
 from google.oauth2.service_account import Credentials
+
+
+scope = [
+    "https://www.googleapis.com/auth/spreadsheets",
+    "https://www.googleapis.com/auth/drive"
+]
+
+creds = Credentials.from_service_account_info(
+    st.secrets["gcp_service_account"],
+    scopes=scope
+)
+
+client = gspread.authorize(creds)
+
+SHEET_URL = st.secrets["gsheets"]["spreadsheet"]
+sheet = client.open_by_url(SHEET_URL).sheet1
+
 
 
 st.set_page_config(page_title="Executive Personality Profile", layout="centered")
@@ -21,19 +37,17 @@ PASSWORD = "1618"
 
 
 def save_result(name, scores):
+    row = [
+        datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        name,
+        scores["O"],
+        scores["C"],
+        scores["E"],
+        scores["A"],
+        scores["N"]
+    ]
+    sheet.append_row(row)
 
-    try:
-        df_existing = conn.read(spreadsheet=SHEET_URL)
-
-        new_row = pd.DataFrame([{
-            "Timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-            "Nome": name,
-            "O": scores["O"],
-            "C": scores["C"],
-            "E": scores["E"],
-            "A": scores["A"],
-            "N": scores["N"],
-        }])
 
         df_updated = pd.concat([df_existing, new_row], ignore_index=True)
 
