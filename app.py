@@ -211,6 +211,13 @@ if st.session_state.step < 5:
     # ---------- LEGENDA ----------
     st.caption("1 = Discordo totalmente | 3 = Neutro | 5 = Concordo totalmente")
 
+
+    QUESTIONS = {...}
+PILLAR_NAMES = {...}
+pillars = list(QUESTIONS.keys())
+
+
+
     # ---------- QUESTIONS ----------
     for qid, text, _ in QUESTIONS[p]:
 
