@@ -295,7 +295,7 @@ if st.session_state.step < TOTAL_STEPS:
             key=qid
         )
 
-        st.session_state[qid] = val
+      
 
 
     # ---------- NAVIGATION ----------
