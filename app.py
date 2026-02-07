@@ -177,12 +177,57 @@ if not st.session_state.auth:
 
 
 # -----------------------------------------------------
+# BIG FIVE STRUCTURE
+# -----------------------------------------------------
+
+QUESTIONS = {
+    "O":[("o1","Tenho imaginação rica",False),("o2","Gosto de ideias abstratas",False),
+         ("o3","Interesse por arte",False),("o4","Prefiro rotina",True),
+         ("o5","Sou curioso",False),("o6","Evito filosofia",True),("o7","Penso no futuro",False)],
+
+    "C":[("c1","Sou organizado",False),("c2","Planejo antes",False),
+         ("c3","Cumpro prazos",False),("c4","Deixo tarefas",True),
+         ("c5","Sou disciplinado",False),("c6","Procrastino",True),("c7","Sou responsável",False)],
+
+    "E":[("e1","Gosto de socializar",False),("e2","Inicio conversas",False),
+         ("e3","Sou expressivo",False),("e4","Prefiro silêncio",True),
+         ("e5","Confortável em grupos",False),("e6","Evito atenção",True),("e7","Sou entusiasmado",False)],
+
+    "A":[("a1","Sou empático",False),("a2","Confio nas pessoas",False),
+         ("a3","Evito conflitos",False),("a4","Sou crítico",True),
+         ("a5","Gosto de ajudar",False),("a6","Sou duro",True),("a7","Valorizo cooperação",False)],
+
+    "N":[("n1","Preocupo-me fácil",False),("n2","Fico ansioso",False),
+         ("n3","Mudo humor",False),("n4","Sou calmo",True),
+         ("n5","Sinto tensão",False),("n6","Raramente estressado",True),("n7","Reajo forte",False)]
+}
+
+PILLAR_NAMES = {
+    "O":"Abertura",
+    "C":"Execução",
+    "E":"Energia Social",
+    "A":"Cooperação",
+    "N":"Estabilidade Emocional"
+}
+
+pillars = list(QUESTIONS.keys())
+
+
+
+
+# -----------------------------------------------------
 # UX QUESTIONÁRIO — MOBILE / CONSULTORIA
 # -----------------------------------------------------
+
+if "step" not in st.session_state:
+    st.session_state.step = 0
+
 
 TOTAL_STEPS = 5
 
 progress_pct = int((st.session_state.step / TOTAL_STEPS) * 100)
+
+
 
 st.markdown(f"""
 ### 🧠 Avaliação de Perfil Executivo  
@@ -217,25 +262,29 @@ if st.session_state.step < 5:
     st.caption("1 = Discordo totalmente | 3 = Neutro | 5 = Concordo totalmente")
 
 
-    QUESTIONS = {...}
-PILLAR_NAMES = {...}
-pillars = list(QUESTIONS.keys())
 
 
+if st.session_state.step < 5:
+
+    p = pillars[st.session_state.step]
+
+    st.markdown(...)
+    st.caption(...)
 
     # ---------- QUESTIONS ----------
-for qid, text, _ in QUESTIONS[p]:
+    for qid, text, _ in QUESTIONS[p]:
 
-    if qid not in st.session_state:
-        st.session_state[qid] = 3
+        if qid not in st.session_state:
+            st.session_state[qid] = 3
 
-    st.slider(
-        label=text,
-        min_value=1,
-        max_value=5,
-        value=st.session_state[qid],   # 👈 IMPORTANTE
-        key=qid
-    )
+        st.slider(
+            label=text,
+            min_value=1,
+            max_value=5,
+            value=st.session_state[qid],
+            key=qid
+        )
+
 
 
 
