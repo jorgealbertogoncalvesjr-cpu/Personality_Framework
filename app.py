@@ -15,8 +15,31 @@ from reportlab.lib.pagesizes import A4
 from reportlab.pdfgen import canvas
 
 
+# -----------------------------------------------------
+# PAGE CONFIG — DEVE SER O PRIMEIRO st.*
+# -----------------------------------------------------
 st.set_page_config(page_title="Executive Personality Engine", layout="centered")
 
+
+# -----------------------------------------------------
+# SESSION STATE SAFE INIT (ANTI CRASH)
+# -----------------------------------------------------
+if "answers" not in st.session_state:
+    st.session_state.answers = {}
+
+if "step" not in st.session_state:
+    st.session_state.step = 0
+
+if "init" not in st.session_state:
+    for p in ["o","c","e","a","n"]:
+        for i in range(1,8):
+            st.session_state[f"{p}{i}"] = 3
+    st.session_state.init = True
+
+
+# -----------------------------------------------------
+# UI STYLE (MOBILE FRIENDLY)
+# -----------------------------------------------------
 st.markdown("""
 <style>
     .stSlider > div {
@@ -31,33 +54,9 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 
-
 # -----------------------------------------------------
-# SESSION STATE — ANTI RESET DEFINITIVO
+# ANSWER HELPERS (SAFE)
 # -----------------------------------------------------
-# SESSION INIT
-# ---------- PILAR HEADER ----------
-if st.session_state.step < 5:
-
-    p = pillars[st.session_state.step]
-
-    st.markdown(f"""
-    <div style="
-        padding:14px;
-        border-radius:10px;
-        background:#EEF4FF;
-        border-left:6px solid #4A7BFF;
-        margin-bottom:10px;
-    ">
-        <b style="font-size:18px">{PILLAR_NAMES[p]}</b><br>
-        <span style="font-size:13px;color:#555">
-        Avalie o quanto cada afirmação representa você.
-        </span>
-    </div>
-    """, unsafe_allow_html=True)
-
-
-
 def get_answer(key):
     return st.session_state.answers.get(key, 3)
 
@@ -65,12 +64,9 @@ def set_answer(key, val):
     st.session_state.answers[key] = val
 
 
-
-
 # -----------------------------------------------------
 # LEGAL / AUTORES / BASE CIENTÍFICA
 # -----------------------------------------------------
-
 st.markdown("""
 <div style="
     padding:12px;
@@ -95,16 +91,10 @@ não constitui diagnóstico psicológico ou avaliação clínica.
 
 
 # -----------------------------------------------------
-# SESSION INIT — ANTI RESET
+# CONFIG
 # -----------------------------------------------------
-if "init" not in st.session_state:
-    for p in ["o","c","e","a","n"]:
-        for i in range(1,8):
-            st.session_state[f"{p}{i}"] = 3
-    st.session_state.step = 0
-    st.session_state.init = True
-
 PASSWORD = "1618"
+
 
 # -----------------------------------------------------
 # GOOGLE SHEETS SAFE CONNECT
