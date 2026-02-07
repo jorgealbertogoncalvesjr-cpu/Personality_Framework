@@ -35,8 +35,28 @@ st.markdown("""
 # -----------------------------------------------------
 # SESSION STATE — ANTI RESET DEFINITIVO
 # -----------------------------------------------------
-if "answers" not in st.session_state:
-    st.session_state.answers = {}
+# SESSION INIT
+# ---------- PILAR HEADER ----------
+if st.session_state.step < 5:
+
+    p = pillars[st.session_state.step]
+
+    st.markdown(f"""
+    <div style="
+        padding:14px;
+        border-radius:10px;
+        background:#EEF4FF;
+        border-left:6px solid #4A7BFF;
+        margin-bottom:10px;
+    ">
+        <b style="font-size:18px">{PILLAR_NAMES[p]}</b><br>
+        <span style="font-size:13px;color:#555">
+        Avalie o quanto cada afirmação representa você.
+        </span>
+    </div>
+    """, unsafe_allow_html=True)
+
+
 
 def get_answer(key):
     return st.session_state.answers.get(key, 3)
@@ -208,10 +228,7 @@ if st.session_state.step < 5:
     </div>
     """, unsafe_allow_html=True)
 
-   if "step" not in st.session_state:
-    st.session_state.step = 0
-
-
+  
 
     # ---------- LEGENDA ----------
     st.caption("1 = Discordo totalmente | 3 = Neutro | 5 = Concordo totalmente")
