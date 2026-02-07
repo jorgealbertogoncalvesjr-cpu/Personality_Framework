@@ -208,7 +208,9 @@ if st.session_state.step < 5:
     </div>
     """, unsafe_allow_html=True)
 
-    
+    if "step" not in st.session_state:
+    st.session_state.step = 0
+
 
     # ---------- LEGENDA ----------
     st.caption("1 = Discordo totalmente | 3 = Neutro | 5 = Concordo totalmente")
