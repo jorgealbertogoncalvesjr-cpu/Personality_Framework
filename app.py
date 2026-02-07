@@ -14,6 +14,20 @@ from google.oauth2.service_account import Credentials
 from reportlab.lib.pagesizes import A4
 from reportlab.pdfgen import canvas
 
+
+# -----------------------------------------------------
+# SESSION STATE — ANTI RESET DEFINITIVO
+# -----------------------------------------------------
+if "answers" not in st.session_state:
+    st.session_state.answers = {}
+
+def get_answer(key):
+    return st.session_state.answers.get(key, 3)
+
+def set_answer(key, val):
+    st.session_state.answers[key] = val
+
+
 st.set_page_config(page_title="Executive Personality Engine", layout="centered")
 
 # -----------------------------------------------------
@@ -53,6 +67,17 @@ try:
 except Exception as e:
     st.sidebar.error("Sheets OFF")
     st.sidebar.code(str(e))
+
+@st.cache_data(ttl=120)
+def load_population():
+    if sheet is None:
+        return pd.DataFrame()
+    try:
+        data = sheet.get_all_records()
+        return pd.DataFrame(data)
+    except:
+        return pd.DataFrame()
+
 
 # -----------------------------------------------------
 # CACHE POPULATION — ANTI QUOTA
@@ -125,8 +150,8 @@ if st.session_state.step < 5:
     p = pillars[st.session_state.step]
     st.subheader(p)
 
-    for qid, text, _ in QUESTIONS[p]:
-        st.slider(text, 1, 5, key=qid)
+  
+    
 
     c1,c2 = st.columns(2)
 
@@ -176,49 +201,125 @@ for k,v in s.items():
 # -----------------------------------------------------
 # MATRIX CONSULTING
 # -----------------------------------------------------
-st.subheader("Executive Positioning Matrix")
+st.subheader("Matriz Executiva de Posicionamento")
 
-x=(s["O"]+s["E"])/2
-y=(s["C"]+(100-s["N"]))/2
+x = (s["O"] + s["E"]) / 2
+y = (s["C"] + (100 - s["N"])) / 2
 
-fig,ax=plt.subplots(figsize=(6,6))
-ax.axhline(50,linestyle="--")
-ax.axvline(50,linestyle="--")
-ax.scatter(x,y,s=220)
+fig, ax = plt.subplots(figsize=(6,6))
+
+# Quadrantes
+ax.fill_between([0,50], 50,100, alpha=0.12)
+ax.fill_between([50,100],50,100, alpha=0.05)
+ax.fill_between([0,50],0,50, alpha=0.04)
+ax.fill_between([50,100],0,50, alpha=0.09)
+
+ax.axhline(50, linestyle="--")
+ax.axvline(50, linestyle="--")
+
+ax.scatter(x, y, s=250)
+
+ax.text(20,80,"Executor Técnico", fontsize=9)
+ax.text(65,80,"Líder Estratégico", fontsize=9)
+ax.text(15,20,"Zona de Desenvolvimento", fontsize=9)
+ax.text(65,20,"Perfil Adaptativo", fontsize=9)
+
 ax.set_xlim(0,100)
 ax.set_ylim(0,100)
-ax.set_xlabel("Influência")
-ax.set_ylabel("Execução")
+ax.set_xlabel("Visão & Influência")
+ax.set_ylabel("Execução & Consistência")
+
 st.pyplot(fig)
+
+
+#CONSULTORIA REAL
+
+st.subheader("Leitura Executiva")
+
+if x > 60 and y > 60:
+    st.success("Perfil de Liderança Estratégica — visão sistêmica e alta execução.")
+elif x < 50 and y > 60:
+    st.info("Executor Técnico — forte capacidade de entrega e disciplina.")
+elif x > 60 and y < 50:
+    st.warning("Perfil Influenciador — visão elevada, execução variável.")
+else:
+    st.error("Zona de Desenvolvimento — foco em estrutura e consistência.")
+
 
 # -----------------------------------------------------
 # RADAR
 # -----------------------------------------------------
-st.subheader("Behavioral Radar")
-labels=["O","C","E","A","N"]
-vals=[s["O"],s["C"],s["E"],s["A"],100-s["N"]]
-angles=np.linspace(0,2*np.pi,len(labels),endpoint=False).tolist()
-vals+=vals[:1]
-angles+=angles[:1]
+st.subheader("Radar Comportamental")
 
-fig=plt.figure(figsize=(5,5))
-ax=plt.subplot(polar=True)
-ax.plot(angles,vals)
-ax.fill(angles,vals,alpha=0.1)
+labels = ["Abertura","Execução","Energia Social","Cooperação","Estabilidade"]
+vals = [s["O"], s["C"], s["E"], s["A"], 100 - s["N"]]
+
+angles = np.linspace(0, 2*np.pi, len(labels), endpoint=False).tolist()
+vals += vals[:1]
+angles += angles[:1]
+
+fig = plt.figure(figsize=(5,5))
+ax = plt.subplot(polar=True)
+
+ax.plot(angles, vals, linewidth=2)
+ax.fill(angles, vals, alpha=0.15)
+
 ax.set_xticks(angles[:-1])
 ax.set_xticklabels(labels)
+ax.set_yticks([20,40,60,80])
+ax.set_ylim(0,100)
+
 st.pyplot(fig)
+
+#Indice de Liderança Executiva
+
+st.subheader("Índice de Liderança Executiva")
+
+leadership = (s["C"]*0.35 + s["O"]*0.20 + s["E"]*0.20 + s["A"]*0.15 + (100-s["N"])*0.10)
+
+st.metric("Leadership Score", round(leadership,1))
+
+if leadership > 70:
+    st.success("Alta capacidade de liderança executiva")
+elif leadership > 55:
+    st.info("Perfil de liderança em desenvolvimento")
+else:
+    st.warning("Potencial de liderança a desenvolver")
+
+
 
 # -----------------------------------------------------
 # BENCHMARK
 # -----------------------------------------------------
-df_pop=load_population()
+st.subheader("Benchmark Populacional")
+
+df_pop = load_population()
+
 if not df_pop.empty:
-    st.subheader("Benchmark Populacional")
     for k in ["O","C","E","A","N"]:
-        user=s[k] if k!="N" else 100-s[k]
-        pop=df_pop[k].mean()
-        st.metric(k,f"{round(user,1)} vs {round(pop,1)}")
+        user = s[k] if k!="N" else 100-s[k]
+        pop = df_pop[k].mean()
+
+        st.write(f"**{k}**")
+        st.metric("Você", round(user,1))
+        st.metric("Média", round(pop,1))
+        st.progress(user/100)
+else:
+    st.info("Benchmark será exibido após acumular dados.")
+
+
+#Cluster Executivo
+st.subheader("Cluster Executivo")
+
+if leadership > 70 and x > 60:
+    st.success("Strategic Leader")
+elif s["C"] > 65:
+    st.info("Execution Driver")
+elif s["A"] > 65:
+    st.info("Integrator")
+else:
+    st.warning("Adaptive Profile")
+
 
 # -----------------------------------------------------
 # CONSISTENCY INDEX
