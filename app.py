@@ -26,7 +26,10 @@ if "answers" not in st.session_state:
     st.session_state.answers = {}
 
 if "step" not in st.session_state:
-    st.session_state.step = 0
+    if st.session_state.step == TOTAL_STEPS and not st.session_state.saved:
+    save_result("Participante", s)
+    st.session_state.saved = True
+
 
 if "scores" not in st.session_state:
     st.session_state.scores = None
@@ -37,8 +40,11 @@ if "saved" not in st.session_state:
 if "init" not in st.session_state:
     for p in ["o","c","e","a","n"]:
         for i in range(1,8):
-            st.session_state[f"{p}{i}"] = 3
+            key = f"{p}{i}"
+            if key not in st.session_state:
+                st.session_state[key] = 3
     st.session_state.init = True
+
 
 # -----------------------------------------------------
 # UI STYLE — CONSULTORIA / MOBILE FRIENDLY
@@ -284,16 +290,15 @@ if st.session_state.step < TOTAL_STEPS:
     # ---------- SLIDERS ----------
     for qid, text, _ in QUESTIONS[p]:
 
-        if qid not in st.session_state:
-            st.session_state[qid] = 3
+    if qid not in st.session_state:
+        st.session_state[qid] = 3
 
-        val = st.slider(
-            label=text,
-            min_value=1,
-            max_value=5,
-            value=st.session_state[qid],
-            key=qid
-        )
+    st.slider(
+        label=text,
+        min_value=1,
+        max_value=5,
+        key=qid
+    )
 
       
 
@@ -335,12 +340,24 @@ else:
         scores[p] = round((raw - 1) / 4 * 100, 1)
 
     st.session_state.scores = scores
+    
+# DEBUG silencioso (remova depois)
+if st.sidebar.checkbox("DEBUG MODE", False):
+    st.sidebar.write("Session answers:")
+    dbg = {k: st.session_state[k] for k in st.session_state if len(k)==2}
+    st.sidebar.write(dbg)
+
+def percentile(score, mean=50, std=15):
+    z = (score - mean) / std
+    return round((0.5 * (1 + math.erf(z / math.sqrt(2)))) * 100, 1)
+
 
 # -----------------------------------------------------
 # RESULTS — SAFE
 # -----------------------------------------------------
-if "scores" not in st.session_state:
+if st.session_state.scores is None:
     st.stop()
+
 
 s = st.session_state.scores
 
@@ -385,6 +402,13 @@ labels = {
 for i, k in enumerate(["O","C","E","A","N"]):
     val = s[k] if k != "N" else 100 - s[k]
     cols[i].metric(labels[k], f"{round(val,1)}")
+
+st.markdown("### Percentil Executivo")
+
+for k in ["O","C","E","A","N"]:
+    val = s[k] if k != "N" else 100 - s[k]
+    pct = percentile(val)
+    st.metric(f"{labels[k]} Percentil", f"{pct}%")
 
 
 # -----------------------------------------------------
