@@ -22,31 +22,46 @@ st.set_page_config(page_title="Executive Personality Profile", layout="centered"
 PASSWORD = "1618"
 
 # -----------------------------------------------------
-# GOOGLE SHEETS CONNECTION (NO CONN / NO BUG)
+# GOOGLE SHEETS CONNECTION — SAFE MODE
 # -----------------------------------------------------
-scope = [
-    "https://www.googleapis.com/auth/spreadsheets",
-    "https://www.googleapis.com/auth/drive"
-]
 
-creds = Credentials.from_service_account_info(
-    st.secrets["gcp_service_account"],
-    scopes=scope
-)
+sheet = None
+google_ok = False
 
-client = gspread.authorize(creds)
+try:
+    scope = [
+        "https://www.googleapis.com/auth/spreadsheets",
+        "https://www.googleapis.com/auth/drive"
+    ]
 
-SHEET_URL = st.secrets["gsheets"]["spreadsheet"]
-sheet = client.open_by_url(SHEET_URL).sheet1
+    creds = Credentials.from_service_account_info(
+        st.secrets["gcp_service_account"],
+        scopes=scope
+    )
 
+    client = gspread.authorize(creds)
 
-client = gspread.authorize(creds)
-sheet = client.open_by_url(st.secrets["gsheets"]["spreadsheet"]).sheet1
+    SHEET_URL = st.secrets["gsheets"]["spreadsheet"]
+    sheet = client.open_by_url(SHEET_URL).sheet1
+
+    google_ok = True
+    st.sidebar.success("Google Sheets conectado")
+
+except Exception as e:
+    st.sidebar.error("Erro Google Sheets")
+    st.sidebar.code(str(e))
+    google_ok = False
+
 
 # -----------------------------------------------------
-# SAVE RESULT
+# SAVE RESULT — SAFE WRITE
 # -----------------------------------------------------
 def save_result(name, scores):
+
+    if not google_ok or sheet is None:
+        st.warning("Google Sheets não conectado — dados não salvos")
+        return
+
     try:
         row = [
             datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
@@ -57,9 +72,14 @@ def save_result(name, scores):
             scores["A"],
             scores["N"],
         ]
+
         sheet.append_row(row)
+        st.success("Resultado salvo no Google Sheets")
+
     except Exception as e:
-        st.warning(f"Erro ao salvar no Google Sheets: {e}")
+        st.error("Falha ao salvar no Google Sheets")
+        st.code(str(e))
+
 
 # -----------------------------------------------------
 # LOGIN
