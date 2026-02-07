@@ -15,6 +15,17 @@ from reportlab.lib.pagesizes import A4
 from reportlab.lib.units import cm
 from reportlab.pdfgen import canvas
 
+
+# -----------------------------------------------------
+# SESSION INIT (ANTI RESET SLIDERS)
+# -----------------------------------------------------
+if "initialized" not in st.session_state:
+    for p in ["O","C","E","A","N"]:
+        for i in range(1,8):
+            st.session_state[f"{p.lower()}{i}"] = 3
+    st.session_state.initialized = True
+
+
 # -----------------------------------------------------
 # CONFIG
 # -----------------------------------------------------
@@ -183,8 +194,7 @@ if st.session_state.step < 5:
     st.subheader(PILLAR_NAMES[p])
 
     for qid, text, _ in QUESTIONS[p]:
-        if qid not in st.session_state:
-            st.session_state[qid] = 3
+       
         st.slider(text, 1, 5, key=qid)
 
     c1, c2 = st.columns(2)
