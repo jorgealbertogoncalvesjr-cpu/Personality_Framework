@@ -14,6 +14,9 @@ from google.oauth2.service_account import Credentials
 from reportlab.lib.pagesizes import A4
 from reportlab.pdfgen import canvas
 
+
+st.set_page_config(page_title="Executive Personality Engine", layout="centered")
+
 st.markdown("""
 <style>
     .stSlider > div {
@@ -42,7 +45,7 @@ def set_answer(key, val):
     st.session_state.answers[key] = val
 
 
-st.set_page_config(page_title="Executive Personality Engine", layout="centered")
+
 
 # -----------------------------------------------------
 # LEGAL / AUTORES / BASE CIENTÍFICA
@@ -109,8 +112,7 @@ except Exception as e:
     st.sidebar.error("Sheets OFF")
     st.sidebar.code(str(e))
 
-@st.cache_data(ttl=120)
-def load_population():
+
     if sheet is None:
         return pd.DataFrame()
     try:
@@ -250,40 +252,6 @@ else:
     st.session_state.scores = scores
 
 
-# -----------------------------------------------------
-# QUESTION FLOW
-# -----------------------------------------------------
-if st.session_state.step < 5:
-
-    p = pillars[st.session_state.step]
-    st.subheader(p)
-
-  
-    
-
-    c1,c2 = st.columns(2)
-
-    if c1.button("Voltar") and st.session_state.step>0:
-        st.session_state.step-=1
-        st.rerun()
-
-    if c2.button("Próximo"):
-        st.session_state.step+=1
-        st.rerun()
-
-else:
-    scores={}
-    for p in QUESTIONS:
-        vals=[]
-        for qid,_,rev in QUESTIONS[p]:
-            v=st.session_state[qid]
-            if rev:
-                v=6-v
-            vals.append(v)
-        raw=sum(vals)/len(vals)
-        scores[p]=round((raw-1)/4*100,1)
-
-    st.session_state.scores=scores
 
 # -----------------------------------------------------
 # RESULTS
