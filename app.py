@@ -208,6 +208,8 @@ if st.session_state.step < 5:
     </div>
     """, unsafe_allow_html=True)
 
+    
+
     # ---------- LEGENDA ----------
     st.caption("1 = Discordo totalmente | 3 = Neutro | 5 = Concordo totalmente")
 
@@ -219,17 +221,20 @@ pillars = list(QUESTIONS.keys())
 
 
     # ---------- QUESTIONS ----------
-    for qid, text, _ in QUESTIONS[p]:
+for qid, text, _ in QUESTIONS[p]:
 
-        if qid not in st.session_state:
-            st.session_state[qid] = 3
+    if qid not in st.session_state:
+        st.session_state[qid] = 3
 
-        st.slider(
-            label=text,
-            min_value=1,
-            max_value=5,
-            key=qid
-        )
+    st.slider(
+        label=text,
+        min_value=1,
+        max_value=5,
+        value=st.session_state[qid],   # 👈 IMPORTANTE
+        key=qid
+    )
+
+
 
     # ---------- NAV BUTTONS ----------
     c1, c2 = st.columns(2)
@@ -257,8 +262,6 @@ else:
         scores[p] = round((raw - 1) / 4 * 100, 1)
 
     st.session_state.scores = scores
-
-
 
 # -----------------------------------------------------
 # RESULTS
