@@ -208,8 +208,9 @@ if st.session_state.step < 5:
     </div>
     """, unsafe_allow_html=True)
 
-    if "step" not in st.session_state:
+   if "step" not in st.session_state:
     st.session_state.step = 0
+
 
 
     # ---------- LEGENDA ----------
