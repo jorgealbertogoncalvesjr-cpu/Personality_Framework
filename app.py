@@ -25,6 +25,18 @@ PASSWORD = "1618"
 # GOOGLE SHEETS CONNECTION — SAFE MODE
 # -----------------------------------------------------
 
+# -----------------------------------------------------
+# CACHE — LOAD POPULATION (ANTI GOOGLE QUOTA)
+# -----------------------------------------------------
+@st.cache_data(ttl=60)
+def load_population():
+    try:
+        data = sheet.get_all_records()
+        return pd.DataFrame(data)
+    except:
+        return pd.DataFrame()
+
+
 sheet = None
 google_ok = False
 
@@ -259,7 +271,7 @@ st.pyplot(fig)
 # BENCHMARK REAL
 st.markdown("## Benchmark Real")
 try:
-    df_pop = pd.DataFrame(sheet.get_all_records())
+   df_pop = load_population()
     for k in ["O","C","E","A","N"]:
         user = s[k] if k!="N" else 100-s[k]
         pop = df_pop[k].mean()
