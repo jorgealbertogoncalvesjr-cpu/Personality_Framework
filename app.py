@@ -18,6 +18,7 @@ from reportlab.pdfgen import canvas
 # -----------------------------------------------------
 # PAGE CONFIG — DEVE SER O PRIMEIRO st.*
 # -----------------------------------------------------
+
 st.set_page_config(page_title="Executive Personality Engine", layout="centered")
 
 
@@ -130,13 +131,14 @@ except Exception as e:
 # -----------------------------------------------------
 @st.cache_data(ttl=60)
 def load_population():
-    if not google_ok:
+    if sheet is None:
         return pd.DataFrame()
     try:
         data = sheet.get_all_records()
         return pd.DataFrame(data)
     except:
         return pd.DataFrame()
+
 
 # -----------------------------------------------------
 # SAVE RESULT
@@ -277,13 +279,15 @@ if st.session_state.step < 5:
         if qid not in st.session_state:
             st.session_state[qid] = 3
 
-        st.slider(
-            label=text,
-            min_value=1,
-            max_value=5,
-            value=st.session_state[qid],
-            key=qid
-        )
+
+st.slider(
+    label=text,
+    min_value=1,
+    max_value=5,
+    value=st.session_state[qid],
+    key=qid
+)
+
 
 
 
