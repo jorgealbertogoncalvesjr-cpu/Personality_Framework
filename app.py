@@ -29,14 +29,16 @@ scope = [
     "https://www.googleapis.com/auth/drive"
 ]
 
-import json
-
 creds = Credentials.from_service_account_info(
-    json.loads(st.secrets["gcp_service_account"]["json"]),
+    st.secrets["gcp_service_account"],
     scopes=scope
 )
 
-)
+client = gspread.authorize(creds)
+
+SHEET_URL = st.secrets["gsheets"]["spreadsheet"]
+sheet = client.open_by_url(SHEET_URL).sheet1
+
 
 client = gspread.authorize(creds)
 sheet = client.open_by_url(st.secrets["gsheets"]["spreadsheet"]).sheet1
