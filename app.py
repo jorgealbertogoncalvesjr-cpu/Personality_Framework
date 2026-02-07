@@ -29,9 +29,13 @@ scope = [
     "https://www.googleapis.com/auth/drive"
 ]
 
+import json
+
 creds = Credentials.from_service_account_info(
-    st.secrets["gcp_service_account"],
+    json.loads(st.secrets["gcp_service_account"]["json"]),
     scopes=scope
+)
+
 )
 
 client = gspread.authorize(creds)
