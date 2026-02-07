@@ -14,6 +14,20 @@ from google.oauth2.service_account import Credentials
 from reportlab.lib.pagesizes import A4
 from reportlab.pdfgen import canvas
 
+st.markdown("""
+<style>
+    .stSlider > div {
+        padding-bottom: 12px;
+    }
+    .stButton button {
+        border-radius: 8px;
+        height: 45px;
+        font-weight: 600;
+    }
+</style>
+""", unsafe_allow_html=True)
+
+
 
 # -----------------------------------------------------
 # SESSION STATE — ANTI RESET DEFINITIVO
@@ -29,6 +43,33 @@ def set_answer(key, val):
 
 
 st.set_page_config(page_title="Executive Personality Engine", layout="centered")
+
+# -----------------------------------------------------
+# LEGAL / AUTORES / BASE CIENTÍFICA
+# -----------------------------------------------------
+
+st.markdown("""
+<div style="
+    padding:12px;
+    border-radius:8px;
+    background:#F6F8FB;
+    border:1px solid #E1E5EE;
+    font-size:13px;
+    line-height:1.4;
+">
+
+<b>Base científica:</b> Modelo dos Cinco Grandes Fatores de Personalidade (Big Five / OCEAN)<br>
+
+<b>Autores fundamentais:</b><br>
+• Lewis Goldberg (1990) — Estrutura lexical da personalidade<br>
+• Paul Costa & Robert McCrae (1992) — NEO-PI-R<br>
+
+<b>Nota:</b> Esta aplicação é uma ferramenta de desenvolvimento e autoconhecimento, 
+não constitui diagnóstico psicológico ou avaliação clínica.
+
+</div>
+""", unsafe_allow_html=True)
+
 
 # -----------------------------------------------------
 # SESSION INIT — ANTI RESET
@@ -129,18 +170,85 @@ if not st.session_state.auth:
             st.error("Senha incorreta")
     st.stop()
 
-# -----------------------------------------------------
-# QUESTIONS
-# -----------------------------------------------------
-QUESTIONS = {
-    "O":[("o1","Tenho imaginação rica",False),("o2","Gosto de ideias abstratas",False),("o3","Interesse por arte",False),("o4","Prefiro rotina",True),("o5","Sou curioso",False),("o6","Evito filosofia",True),("o7","Penso no futuro",False)],
-    "C":[("c1","Sou organizado",False),("c2","Planejo antes",False),("c3","Cumpro prazos",False),("c4","Deixo tarefas",True),("c5","Sou disciplinado",False),("c6","Procrastino",True),("c7","Sou responsável",False)],
-    "E":[("e1","Gosto de socializar",False),("e2","Inicio conversas",False),("e3","Sou expressivo",False),("e4","Prefiro silêncio",True),("e5","Confortável em grupos",False),("e6","Evito atenção",True),("e7","Sou entusiasmado",False)],
-    "A":[("a1","Sou empático",False),("a2","Confio nas pessoas",False),("a3","Evito conflitos",False),("a4","Sou crítico",True),("a5","Gosto de ajudar",False),("a6","Sou duro",True),("a7","Valorizo cooperação",False)],
-    "N":[("n1","Preocupo-me fácil",False),("n2","Fico ansioso",False),("n3","Mudo humor",False),("n4","Sou calmo",True),("n5","Sinto tensão",False),("n6","Raramente estressado",True),("n7","Reajo forte",False)]
-}
 
-pillars = list(QUESTIONS.keys())
+# -----------------------------------------------------
+# UX QUESTIONÁRIO — MOBILE / CONSULTORIA
+# -----------------------------------------------------
+
+TOTAL_STEPS = 5
+
+progress_pct = int((st.session_state.step / TOTAL_STEPS) * 100)
+
+st.markdown(f"""
+### 🧠 Avaliação de Perfil Executivo  
+**Etapa {st.session_state.step + 1} de {TOTAL_STEPS} — {progress_pct}% concluído**
+""")
+
+st.progress(st.session_state.step / TOTAL_STEPS)
+
+# ---------- PILAR HEADER ----------
+if st.session_state.step < 5:
+
+    p = pillars[st.session_state.step]
+
+    st.markdown(f"""
+    <div style="
+        padding:14px;
+        border-radius:10px;
+        background:#EEF4FF;
+        border-left:6px solid #4A7BFF;
+        margin-bottom:10px;
+    ">
+        <b style="font-size:18px">{PILLAR_NAMES[p]}</b><br>
+        <span style="font-size:13px;color:#555">
+        Avalie o quanto cada afirmação representa você.
+        </span>
+    </div>
+    """, unsafe_allow_html=True)
+
+    # ---------- LEGENDA ----------
+    st.caption("1 = Discordo totalmente | 3 = Neutro | 5 = Concordo totalmente")
+
+    # ---------- QUESTIONS ----------
+    for qid, text, _ in QUESTIONS[p]:
+
+        if qid not in st.session_state:
+            st.session_state[qid] = 3
+
+        st.slider(
+            label=text,
+            min_value=1,
+            max_value=5,
+            key=qid
+        )
+
+    # ---------- NAV BUTTONS ----------
+    c1, c2 = st.columns(2)
+
+    if c1.button("⬅ Voltar", use_container_width=True) and st.session_state.step > 0:
+        st.session_state.step -= 1
+        st.rerun()
+
+    if c2.button("Próximo ➡", use_container_width=True):
+        st.session_state.step += 1
+        st.rerun()
+
+else:
+    scores = {}
+
+    for p in QUESTIONS:
+        vals = []
+        for qid, _, rev in QUESTIONS[p]:
+            v = st.session_state.get(qid, 3)
+            if rev:
+                v = 6 - v
+            vals.append(v)
+
+        raw = sum(vals) / len(vals)
+        scores[p] = round((raw - 1) / 4 * 100, 1)
+
+    st.session_state.scores = scores
+
 
 # -----------------------------------------------------
 # QUESTION FLOW
@@ -333,17 +441,51 @@ st.metric("Índice",round(100-std*3,1))
 # -----------------------------------------------------
 st.subheader("Relatório Executivo PDF")
 
-def gerar_pdf(name,s):
-    buffer=io.BytesIO()
-    c=canvas.Canvas(buffer,pagesize=A4)
-    c.drawString(100,800,f"Executive Report — {name}")
-    y=760
-    for k,v in s.items():
-        c.drawString(100,y,f"{k}: {v}")
-        y-=20
+def gerar_pdf(name, s):
+
+    buffer = io.BytesIO()
+    c = canvas.Canvas(buffer, pagesize=A4)
+    w, h = A4
+
+    # -------------------------------------------------
+    # TÍTULO
+    # -------------------------------------------------
+    c.setFont("Helvetica-Bold", 16)
+    c.drawString(2*cm, h-3*cm, "Executive Personality Report")
+
+    c.setFont("Helvetica", 11)
+    c.drawString(2*cm, h-4*cm, f"Nome: {name}")
+
+    # -------------------------------------------------
+    # BASE CIENTÍFICA / AUTORES (LEGAL SAFE)
+    # -------------------------------------------------
+    c.setFont("Helvetica", 9)
+    c.drawString(2*cm, h-5*cm,
+                 "Base científica: Big Five Personality Model (OCEAN)")
+    c.drawString(2*cm, h-5.6*cm,
+                 "Goldberg (1990) | Costa & McCrae (1992)")
+    c.drawString(2*cm, h-6.2*cm,
+                 "Ferramenta de desenvolvimento — não constitui diagnóstico clínico")
+
+    # -------------------------------------------------
+    # SCORES
+    # -------------------------------------------------
+    y = h - 8*cm
+    c.setFont("Helvetica", 11)
+
+    for k, v in s.items():
+        c.drawString(2*cm, y, f"{k}: {round(v,1)}")
+        y -= 0.7*cm
+
     c.save()
     buffer.seek(0)
     return buffer
 
-pdf=gerar_pdf(name,s)
-st.download_button("Baixar PDF",pdf,"executive_report.pdf")
+
+pdf = gerar_pdf(name, s)
+
+st.download_button(
+    "Baixar PDF",
+    pdf,
+    file_name="executive_report.pdf"
+)
