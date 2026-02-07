@@ -424,20 +424,3 @@ st.subheader("Consistency Index")
 std=np.std(list(s.values()))
 st.metric("Índice",round(100-std*3,1))
 
-File "/home/adminuser/venv/lib/python3.13/site-packages/streamlit/runtime/scriptrunner/exec_code.py", line 75, in exec_func_with_error_handling
-    result = func()
-File "/home/adminuser/venv/lib/python3.13/site-packages/streamlit/runtime/scriptrunner/script_runner.py", line 574, in code_to_exec
-    exec(code, module.__dict__)
-    ~~~~^^^^^^^^^^^^^^^^^^^^^^^
-File "/mount/src/personality_framework/app.py", line 45, in <module>
-    st.set_page_config(page_title="Executive Personality Engine", layout="centered")
-    ~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-File "/home/adminuser/venv/lib/python3.13/site-packages/streamlit/runtime/metrics_util.py", line 408, in wrapped_func
-    result = non_optional_func(*args, **kwargs)
-File "/home/adminuser/venv/lib/python3.13/site-packages/streamlit/commands/page_config.py", line 260, in set_page_config
-    ctx.enqueue(msg)
-    ~~~~~~~~~~~^^^^^
-File "/home/adminuser/venv/lib/python3.13/site-packages/streamlit/runtime/scriptrunner/script_run_context.py", line 140, in enqueue
-    raise StreamlitAPIException(
-    ...<4 lines>...
-    )
