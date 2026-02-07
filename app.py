@@ -248,36 +248,69 @@ for k in s:
     val = s[k] if k!="N" else 100-s[k]
     st.metric(PILLAR_NAMES[k], f"{val}")
 
-# MATRIZ EXECUTIVA
-st.markdown("## Matriz Executiva")
+
+# =====================================================
+# EXECUTIVE POSITIONING MATRIX — CONSULTING LEVEL
+# =====================================================
+st.subheader("Matriz Executiva de Posicionamento")
+
 x = (s["O"] + s["E"]) / 2
 y = (s["C"] + (100 - s["N"])) / 2
 
-fig, ax = plt.subplots(figsize=(5,5))
-ax.axhline(50, linestyle="--")
-ax.axvline(50, linestyle="--")
-ax.scatter(x, y, s=180)
+fig, ax = plt.subplots(figsize=(6,6))
+
+# Quadrantes coloridos
+ax.fill_between([0,50], 50, 100, alpha=0.08)   # Executor Técnico
+ax.fill_between([50,100], 50, 100, alpha=0.08) # Líder Estratégico
+ax.fill_between([0,50], 0, 50, alpha=0.08)     # Zona Desenvolvimento
+ax.fill_between([50,100], 0, 50, alpha=0.08)   # Perfil Adaptativo
+
+# Linhas centrais
+ax.axhline(50, linestyle="--", linewidth=1)
+ax.axvline(50, linestyle="--", linewidth=1)
+
+# Ponto executivo
+ax.scatter(x, y, s=220, zorder=3)
+
+# Vetor de evolução (direção crescimento)
+ax.arrow(x, y, (70-x)/4, (70-y)/4,
+         head_width=2, head_length=2,
+         length_includes_head=True,
+         alpha=0.6)
+
+# Labels quadrantes
+ax.text(15,85,"Executor Técnico", fontsize=9)
+ax.text(65,85,"Líder Estratégico", fontsize=9)
+ax.text(15,15,"Zona de Desenvolvimento", fontsize=9)
+ax.text(65,15,"Perfil Adaptativo", fontsize=9)
+
 ax.set_xlim(0,100)
 ax.set_ylim(0,100)
 ax.set_xlabel("Visão & Influência")
 ax.set_ylabel("Execução & Consistência")
+
 st.pyplot(fig)
 
-# RADAR
-st.markdown("## Radar Comportamental")
-labels = list(PILLAR_NAMES.values())
-vals = [s["O"],s["C"],s["E"],s["A"],100-s["N"]]
-angles = np.linspace(0, 2*np.pi, len(labels), endpoint=False).tolist()
-vals += vals[:1]
-angles += angles[:1]
+# -----------------------------------------------------
+# CLASSIFICAÇÃO EXECUTIVA AUTOMÁTICA
+# -----------------------------------------------------
+if x >= 50 and y >= 50:
+    zone = "Líder Estratégico"
+    interp = "Alta capacidade de visão e execução. Perfil típico de liderança organizacional."
+elif x < 50 and y >= 50:
+    zone = "Executor Técnico"
+    interp = "Forte execução, menor foco em influência estratégica."
+elif x >= 50 and y < 50:
+    zone = "Perfil Adaptativo"
+    interp = "Boa influência, execução em desenvolvimento."
+else:
+    zone = "Zona de Desenvolvimento"
+    interp = "Base comportamental em evolução — potencial de crescimento."
 
-fig = plt.figure(figsize=(5,5))
-ax = plt.subplot(polar=True)
-ax.plot(angles, vals, linewidth=2)
-ax.fill(angles, vals, alpha=0.1)
-ax.set_xticks(angles[:-1])
-ax.set_xticklabels(labels)
-st.pyplot(fig)
+st.markdown(f"### Classificação Executiva: **{zone}**")
+st.info(interp)
+
+
 
 # BENCHMARK REAL
 try:
