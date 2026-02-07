@@ -39,6 +39,7 @@ PASSWORD = "1618"
 # -----------------------------------------------------
 # CACHE — LOAD POPULATION (ANTI GOOGLE QUOTA)
 # -----------------------------------------------------
+
 @st.cache_data(ttl=60)
 def load_population():
     try:
@@ -279,18 +280,21 @@ ax.set_xticklabels(labels)
 st.pyplot(fig)
 
 # BENCHMARK REAL
-st.markdown("## Benchmark Real")
 try:
-   df_pop = load_population()
+    df_pop = load_population()
+
     for k in ["O","C","E","A","N"]:
-        user = s[k] if k!="N" else 100-s[k]
-        pop = df_pop[k].mean()
+        user = s[k] if k != "N" else 100 - s[k]
+        pop_mean = df_pop[k].mean()
+
         st.write(f"**{PILLAR_NAMES[k]}**")
         st.metric("Você", round(user,1))
-        st.metric("Média Pop.", round(pop,1))
+        st.metric("Média Pop.", round(pop_mean,1))
         st.progress(user/100)
+
 except:
-    st.info("Benchmark aparecerá após acumular dados")
+    st.info("Benchmark aparecerá após acumular dados.")
+
 
 # PDF
 st.markdown("## Relatório PDF")
