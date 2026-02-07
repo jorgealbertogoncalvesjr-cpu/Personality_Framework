@@ -123,14 +123,7 @@ except Exception as e:
     st.sidebar.code(str(e))
 
 
-    if sheet is None:
-        return pd.DataFrame()
-    try:
-        data = sheet.get_all_records()
-        return pd.DataFrame(data)
-    except:
-        return pd.DataFrame()
-
+ 
 
 # -----------------------------------------------------
 # CACHE POPULATION — ANTI QUOTA
