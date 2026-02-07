@@ -436,56 +436,20 @@ st.subheader("Consistency Index")
 std=np.std(list(s.values()))
 st.metric("Índice",round(100-std*3,1))
 
-# -----------------------------------------------------
-# PDF REPORT
-# -----------------------------------------------------
-st.subheader("Relatório Executivo PDF")
-
-def gerar_pdf(name, s):
-
-    buffer = io.BytesIO()
-    c = canvas.Canvas(buffer, pagesize=A4)
-    w, h = A4
-
-    # -------------------------------------------------
-    # TÍTULO
-    # -------------------------------------------------
-    c.setFont("Helvetica-Bold", 16)
-    c.drawString(2*cm, h-3*cm, "Executive Personality Report")
-
-    c.setFont("Helvetica", 11)
-    c.drawString(2*cm, h-4*cm, f"Nome: {name}")
-
-    # -------------------------------------------------
-    # BASE CIENTÍFICA / AUTORES (LEGAL SAFE)
-    # -------------------------------------------------
-    c.setFont("Helvetica", 9)
-    c.drawString(2*cm, h-5*cm,
-                 "Base científica: Big Five Personality Model (OCEAN)")
-    c.drawString(2*cm, h-5.6*cm,
-                 "Goldberg (1990) | Costa & McCrae (1992)")
-    c.drawString(2*cm, h-6.2*cm,
-                 "Ferramenta de desenvolvimento — não constitui diagnóstico clínico")
-
-    # -------------------------------------------------
-    # SCORES
-    # -------------------------------------------------
-    y = h - 8*cm
-    c.setFont("Helvetica", 11)
-
-    for k, v in s.items():
-        c.drawString(2*cm, y, f"{k}: {round(v,1)}")
-        y -= 0.7*cm
-
-    c.save()
-    buffer.seek(0)
-    return buffer
-
-
-pdf = gerar_pdf(name, s)
-
-st.download_button(
-    "Baixar PDF",
-    pdf,
-    file_name="executive_report.pdf"
-)
+File "/home/adminuser/venv/lib/python3.13/site-packages/streamlit/runtime/scriptrunner/exec_code.py", line 75, in exec_func_with_error_handling
+    result = func()
+File "/home/adminuser/venv/lib/python3.13/site-packages/streamlit/runtime/scriptrunner/script_runner.py", line 574, in code_to_exec
+    exec(code, module.__dict__)
+    ~~~~^^^^^^^^^^^^^^^^^^^^^^^
+File "/mount/src/personality_framework/app.py", line 45, in <module>
+    st.set_page_config(page_title="Executive Personality Engine", layout="centered")
+    ~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+File "/home/adminuser/venv/lib/python3.13/site-packages/streamlit/runtime/metrics_util.py", line 408, in wrapped_func
+    result = non_optional_func(*args, **kwargs)
+File "/home/adminuser/venv/lib/python3.13/site-packages/streamlit/commands/page_config.py", line 260, in set_page_config
+    ctx.enqueue(msg)
+    ~~~~~~~~~~~^^^^^
+File "/home/adminuser/venv/lib/python3.13/site-packages/streamlit/runtime/scriptrunner/script_run_context.py", line 140, in enqueue
+    raise StreamlitAPIException(
+    ...<4 lines>...
+    )
