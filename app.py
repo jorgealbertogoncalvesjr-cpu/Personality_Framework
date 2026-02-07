@@ -1,5 +1,5 @@
 # =====================================================
-# EXECUTIVE PERSONALITY ENGINE — PROFESSIONAL STABLE
+# EXECUTIVE PERSONALITY ENGINE — ENTERPRISE CONSULTING
 # =====================================================
 
 import streamlit as st
@@ -12,43 +12,25 @@ from datetime import datetime
 import gspread
 from google.oauth2.service_account import Credentials
 from reportlab.lib.pagesizes import A4
-from reportlab.lib.units import cm
 from reportlab.pdfgen import canvas
 
+st.set_page_config(page_title="Executive Personality Engine", layout="centered")
 
 # -----------------------------------------------------
-# SESSION INIT (ANTI RESET SLIDERS)
+# SESSION INIT — ANTI RESET
 # -----------------------------------------------------
-if "initialized" not in st.session_state:
-    for p in ["O","C","E","A","N"]:
+if "init" not in st.session_state:
+    for p in ["o","c","e","a","n"]:
         for i in range(1,8):
-            st.session_state[f"{p.lower()}{i}"] = 3
-    st.session_state.initialized = True
+            st.session_state[f"{p}{i}"] = 3
+    st.session_state.step = 0
+    st.session_state.init = True
 
-
-# -----------------------------------------------------
-# CONFIG
-# -----------------------------------------------------
-st.set_page_config(page_title="Executive Personality Profile", layout="centered")
 PASSWORD = "1618"
 
 # -----------------------------------------------------
-# GOOGLE SHEETS CONNECTION — SAFE MODE
+# GOOGLE SHEETS SAFE CONNECT
 # -----------------------------------------------------
-
-# -----------------------------------------------------
-# CACHE — LOAD POPULATION (ANTI GOOGLE QUOTA)
-# -----------------------------------------------------
-
-@st.cache_data(ttl=60)
-def load_population():
-    try:
-        data = sheet.get_all_records()
-        return pd.DataFrame(data)
-    except:
-        return pd.DataFrame()
-
-
 sheet = None
 google_ok = False
 
@@ -64,28 +46,33 @@ try:
     )
 
     client = gspread.authorize(creds)
-
-    SHEET_URL = st.secrets["gsheets"]["spreadsheet"]
-    sheet = client.open_by_url(SHEET_URL).sheet1
-
+    sheet = client.open_by_url(st.secrets["gsheets"]["spreadsheet"]).sheet1
     google_ok = True
     st.sidebar.success("Google Sheets conectado")
 
 except Exception as e:
-    st.sidebar.error("Erro Google Sheets")
+    st.sidebar.error("Sheets OFF")
     st.sidebar.code(str(e))
-    google_ok = False
-
 
 # -----------------------------------------------------
-# SAVE RESULT — SAFE WRITE
+# CACHE POPULATION — ANTI QUOTA
+# -----------------------------------------------------
+@st.cache_data(ttl=60)
+def load_population():
+    if not google_ok:
+        return pd.DataFrame()
+    try:
+        data = sheet.get_all_records()
+        return pd.DataFrame(data)
+    except:
+        return pd.DataFrame()
+
+# -----------------------------------------------------
+# SAVE RESULT
 # -----------------------------------------------------
 def save_result(name, scores):
-
-    if not google_ok or sheet is None:
-        st.warning("Google Sheets não conectado — dados não salvos")
+    if not google_ok:
         return
-
     try:
         row = [
             datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
@@ -94,16 +81,11 @@ def save_result(name, scores):
             scores["C"],
             scores["E"],
             scores["A"],
-            scores["N"],
+            scores["N"]
         ]
-
         sheet.append_row(row)
-        st.success("Resultado salvo no Google Sheets")
-
-    except Exception as e:
-        st.error("Falha ao salvar no Google Sheets")
-        st.code(str(e))
-
+    except:
+        pass
 
 # -----------------------------------------------------
 # LOGIN
@@ -112,9 +94,8 @@ if "auth" not in st.session_state:
     st.session_state.auth = False
 
 if not st.session_state.auth:
-    st.title("🧠 Executive Personality Assessment")
+    st.title("Executive Personality Assessment")
     senha = st.text_input("Senha", type="password")
-
     if st.button("Entrar"):
         if senha == PASSWORD:
             st.session_state.auth = True
@@ -124,226 +105,144 @@ if not st.session_state.auth:
     st.stop()
 
 # -----------------------------------------------------
-# FUNÇÕES PSICOMÉTRICAS
-# -----------------------------------------------------
-def personality_type(s):
-    if max(s.values()) - min(s.values()) < 12:
-        return "Balanced", "Perfil equilibrado"
-
-    if s["O"] > 65 and s["E"] > 60:
-        return "Explorer", "Inovador e orientado à exploração"
-
-    if s["C"] > 65 and s["N"] < 45:
-        return "Executor", "Disciplinado e orientado a resultados"
-
-    if s["A"] > 65 and s["C"] > 60:
-        return "Diplomat", "Cooperativo e harmonizador"
-
-    return "Analyst", "Analítico e estratégico"
-
-
-def percentile(score, mean=50, std=15):
-    z = (score - mean) / std
-    return round((0.5 * (1 + math.erf(z / math.sqrt(2)))) * 100, 1)
-
-# -----------------------------------------------------
-# QUESTIONÁRIO BIG FIVE
+# QUESTIONS
 # -----------------------------------------------------
 QUESTIONS = {
-    "O":[("o1","Tenho imaginação rica",False),("o2","Gosto de ideias abstratas",False),
-         ("o3","Interesse por arte",False),("o4","Prefiro rotina",True),
-         ("o5","Sou curioso",False),("o6","Evito filosofia",True),("o7","Penso no futuro",False)],
-
-    "C":[("c1","Sou organizado",False),("c2","Planejo antes",False),
-         ("c3","Cumpro prazos",False),("c4","Deixo tarefas",True),
-         ("c5","Sou disciplinado",False),("c6","Procrastino",True),("c7","Sou responsável",False)],
-
-    "E":[("e1","Gosto de socializar",False),("e2","Inicio conversas",False),
-         ("e3","Sou expressivo",False),("e4","Prefiro silêncio",True),
-         ("e5","Confortável em grupos",False),("e6","Evito atenção",True),("e7","Sou entusiasmado",False)],
-
-    "A":[("a1","Sou empático",False),("a2","Confio nas pessoas",False),
-         ("a3","Evito conflitos",False),("a4","Sou crítico",True),
-         ("a5","Gosto de ajudar",False),("a6","Sou duro",True),("a7","Valorizo cooperação",False)],
-
-    "N":[("n1","Preocupo-me fácil",False),("n2","Fico ansioso",False),
-         ("n3","Mudo humor",False),("n4","Sou calmo",True),
-         ("n5","Sinto tensão",False),("n6","Raramente estressado",True),("n7","Reajo forte",False)]
-}
-
-PILLAR_NAMES = {
-    "O":"Abertura",
-    "C":"Execução",
-    "E":"Energia Social",
-    "A":"Cooperação",
-    "N":"Estabilidade Emocional"
+    "O":[("o1","Tenho imaginação rica",False),("o2","Gosto de ideias abstratas",False),("o3","Interesse por arte",False),("o4","Prefiro rotina",True),("o5","Sou curioso",False),("o6","Evito filosofia",True),("o7","Penso no futuro",False)],
+    "C":[("c1","Sou organizado",False),("c2","Planejo antes",False),("c3","Cumpro prazos",False),("c4","Deixo tarefas",True),("c5","Sou disciplinado",False),("c6","Procrastino",True),("c7","Sou responsável",False)],
+    "E":[("e1","Gosto de socializar",False),("e2","Inicio conversas",False),("e3","Sou expressivo",False),("e4","Prefiro silêncio",True),("e5","Confortável em grupos",False),("e6","Evito atenção",True),("e7","Sou entusiasmado",False)],
+    "A":[("a1","Sou empático",False),("a2","Confio nas pessoas",False),("a3","Evito conflitos",False),("a4","Sou crítico",True),("a5","Gosto de ajudar",False),("a6","Sou duro",True),("a7","Valorizo cooperação",False)],
+    "N":[("n1","Preocupo-me fácil",False),("n2","Fico ansioso",False),("n3","Mudo humor",False),("n4","Sou calmo",True),("n5","Sinto tensão",False),("n6","Raramente estressado",True),("n7","Reajo forte",False)]
 }
 
 pillars = list(QUESTIONS.keys())
 
-if "step" not in st.session_state:
-    st.session_state.step = 0
-
-st.progress(st.session_state.step / 5)
-
 # -----------------------------------------------------
-# UX QUESTIONÁRIO
+# QUESTION FLOW
 # -----------------------------------------------------
 if st.session_state.step < 5:
 
     p = pillars[st.session_state.step]
-    st.subheader(PILLAR_NAMES[p])
+    st.subheader(p)
 
     for qid, text, _ in QUESTIONS[p]:
-       
         st.slider(text, 1, 5, key=qid)
 
-    c1, c2 = st.columns(2)
+    c1,c2 = st.columns(2)
 
-    if c1.button("⬅ Voltar") and st.session_state.step > 0:
-        st.session_state.step -= 1
+    if c1.button("Voltar") and st.session_state.step>0:
+        st.session_state.step-=1
         st.rerun()
 
-    if c2.button("Próximo ➡"):
-        st.session_state.step += 1
+    if c2.button("Próximo"):
+        st.session_state.step+=1
         st.rerun()
 
 else:
-    scores = {}
-
+    scores={}
     for p in QUESTIONS:
-        vals = []
-        for qid, _, rev in QUESTIONS[p]:
-            v = st.session_state.get(qid, 3)
+        vals=[]
+        for qid,_,rev in QUESTIONS[p]:
+            v=st.session_state[qid]
             if rev:
-                v = 6 - v
+                v=6-v
             vals.append(v)
+        raw=sum(vals)/len(vals)
+        scores[p]=round((raw-1)/4*100,1)
 
-        raw = sum(vals) / len(vals)
-        scores[p] = round((raw - 1) / 4 * 100, 1)
-
-    st.session_state.scores = scores
+    st.session_state.scores=scores
 
 # -----------------------------------------------------
-# RESULTADOS C-LEVEL
+# RESULTS
 # -----------------------------------------------------
 if "scores" not in st.session_state:
     st.stop()
 
-s = st.session_state.scores
-name = st.text_input("Nome", "Participante")
+s=st.session_state.scores
+name=st.text_input("Nome","Participante")
 
 if "saved" not in st.session_state:
-    save_result(name, s)
-    st.session_state.saved = True
+    save_result(name,s)
+    st.session_state.saved=True
 
-ptype, pdesc = personality_type(s)
-
-st.markdown(f"# Perfil Executivo: **{ptype}**")
-st.write(pdesc)
-
+# -----------------------------------------------------
 # EXECUTIVE SNAPSHOT
-st.markdown("## Executive Snapshot")
-for k in s:
-    val = s[k] if k!="N" else 100-s[k]
-    st.metric(PILLAR_NAMES[k], f"{val}")
+# -----------------------------------------------------
+st.header("Executive Snapshot")
+for k,v in s.items():
+    val=v if k!="N" else 100-v
+    st.metric(k, val)
 
+# -----------------------------------------------------
+# MATRIX CONSULTING
+# -----------------------------------------------------
+st.subheader("Executive Positioning Matrix")
 
-# =====================================================
-# EXECUTIVE POSITIONING MATRIX — CONSULTING LEVEL
-# =====================================================
-st.subheader("Matriz Executiva de Posicionamento")
+x=(s["O"]+s["E"])/2
+y=(s["C"]+(100-s["N"]))/2
 
-x = (s["O"] + s["E"]) / 2
-y = (s["C"] + (100 - s["N"])) / 2
-
-fig, ax = plt.subplots(figsize=(6,6))
-
-# Quadrantes coloridos
-ax.fill_between([0,50], 50, 100, alpha=0.08)   # Executor Técnico
-ax.fill_between([50,100], 50, 100, alpha=0.08) # Líder Estratégico
-ax.fill_between([0,50], 0, 50, alpha=0.08)     # Zona Desenvolvimento
-ax.fill_between([50,100], 0, 50, alpha=0.08)   # Perfil Adaptativo
-
-# Linhas centrais
-ax.axhline(50, linestyle="--", linewidth=1)
-ax.axvline(50, linestyle="--", linewidth=1)
-
-# Ponto executivo
-ax.scatter(x, y, s=220, zorder=3)
-
-# Vetor de evolução (direção crescimento)
-ax.arrow(x, y, (70-x)/4, (70-y)/4,
-         head_width=2, head_length=2,
-         length_includes_head=True,
-         alpha=0.6)
-
-# Labels quadrantes
-ax.text(15,85,"Executor Técnico", fontsize=9)
-ax.text(65,85,"Líder Estratégico", fontsize=9)
-ax.text(15,15,"Zona de Desenvolvimento", fontsize=9)
-ax.text(65,15,"Perfil Adaptativo", fontsize=9)
-
+fig,ax=plt.subplots(figsize=(6,6))
+ax.axhline(50,linestyle="--")
+ax.axvline(50,linestyle="--")
+ax.scatter(x,y,s=220)
 ax.set_xlim(0,100)
 ax.set_ylim(0,100)
-ax.set_xlabel("Visão & Influência")
-ax.set_ylabel("Execução & Consistência")
-
+ax.set_xlabel("Influência")
+ax.set_ylabel("Execução")
 st.pyplot(fig)
 
 # -----------------------------------------------------
-# CLASSIFICAÇÃO EXECUTIVA AUTOMÁTICA
+# RADAR
 # -----------------------------------------------------
-if x >= 50 and y >= 50:
-    zone = "Líder Estratégico"
-    interp = "Alta capacidade de visão e execução. Perfil típico de liderança organizacional."
-elif x < 50 and y >= 50:
-    zone = "Executor Técnico"
-    interp = "Forte execução, menor foco em influência estratégica."
-elif x >= 50 and y < 50:
-    zone = "Perfil Adaptativo"
-    interp = "Boa influência, execução em desenvolvimento."
-else:
-    zone = "Zona de Desenvolvimento"
-    interp = "Base comportamental em evolução — potencial de crescimento."
+st.subheader("Behavioral Radar")
+labels=["O","C","E","A","N"]
+vals=[s["O"],s["C"],s["E"],s["A"],100-s["N"]]
+angles=np.linspace(0,2*np.pi,len(labels),endpoint=False).tolist()
+vals+=vals[:1]
+angles+=angles[:1]
 
-st.markdown(f"### Classificação Executiva: **{zone}**")
-st.info(interp)
+fig=plt.figure(figsize=(5,5))
+ax=plt.subplot(polar=True)
+ax.plot(angles,vals)
+ax.fill(angles,vals,alpha=0.1)
+ax.set_xticks(angles[:-1])
+ax.set_xticklabels(labels)
+st.pyplot(fig)
 
-
-
-# BENCHMARK REAL
-try:
-    df_pop = load_population()
-
+# -----------------------------------------------------
+# BENCHMARK
+# -----------------------------------------------------
+df_pop=load_population()
+if not df_pop.empty:
+    st.subheader("Benchmark Populacional")
     for k in ["O","C","E","A","N"]:
-        user = s[k] if k != "N" else 100 - s[k]
-        pop_mean = df_pop[k].mean()
+        user=s[k] if k!="N" else 100-s[k]
+        pop=df_pop[k].mean()
+        st.metric(k,f"{round(user,1)} vs {round(pop,1)}")
 
-        st.write(f"**{PILLAR_NAMES[k]}**")
-        st.metric("Você", round(user,1))
-        st.metric("Média Pop.", round(pop_mean,1))
-        st.progress(user/100)
+# -----------------------------------------------------
+# CONSISTENCY INDEX
+# -----------------------------------------------------
+st.subheader("Consistency Index")
+std=np.std(list(s.values()))
+st.metric("Índice",round(100-std*3,1))
 
-except:
-    st.info("Benchmark aparecerá após acumular dados.")
-
-
-# PDF
-st.markdown("## Relatório PDF")
+# -----------------------------------------------------
+# PDF REPORT
+# -----------------------------------------------------
+st.subheader("Relatório Executivo PDF")
 
 def gerar_pdf(name,s):
-    buffer = io.BytesIO()
-    c = canvas.Canvas(buffer, pagesize=A4)
-    c.drawString(100,800,f"Executive Personality Report — {name}")
+    buffer=io.BytesIO()
+    c=canvas.Canvas(buffer,pagesize=A4)
+    c.drawString(100,800,f"Executive Report — {name}")
     y=760
     for k,v in s.items():
-        c.drawString(100,y,f"{PILLAR_NAMES[k]}: {round(v,1)}")
+        c.drawString(100,y,f"{k}: {v}")
         y-=20
     c.save()
     buffer.seek(0)
     return buffer
 
-pdf = gerar_pdf(name,s)
-
-st.download_button("Baixar PDF", pdf, "executive_profile.pdf")
+pdf=gerar_pdf(name,s)
+st.download_button("Baixar PDF",pdf,"executive_report.pdf")
