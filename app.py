@@ -236,7 +236,11 @@ if st.session_state.scores is None:
 
 s = st.session_state.scores
 
-if not st.session_state.saved:
+if (
+    not st.session_state.saved
+    and s is not None
+    and sum(s.values()) != 250   # evita salvar tudo 50
+):
     save_result("Participante", s)
     st.session_state.saved = True
 
@@ -273,6 +277,9 @@ cols = st.columns(5)
 for i, k in enumerate(["O","C","E","A","N"]):
     val = s[k] if k != "N" else 100 - s[k]
     cols[i].metric(labels[k], f"{round(val,1)}")
+
+x = (s["O"] + s["E"]) / 2
+y = (s["C"] + (100 - s["N"])) / 2
 
 st.markdown("### Executive Interpretation")
 
