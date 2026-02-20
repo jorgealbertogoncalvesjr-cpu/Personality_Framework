@@ -1,24 +1,18 @@
-# =====================================================
-# EXECUTIVE PERSONALITY ENGINE — CONSULTORIA PRO
-# =====================================================
-
 import streamlit as st
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
-import io
 import time
 from datetime import datetime
 import gspread
 from google.oauth2.service_account import Credentials
-from reportlab.lib.pagesizes import A4
-from reportlab.pdfgen import canvas
-from reportlab.lib.units import cm
-from reportlab.lib.utils import ImageReader
 
 st.set_page_config(page_title="Executive Personality Engine", layout="centered")
 
-# ---------------- SESSION INIT ----------------
+# =====================================================
+# SESSION INIT
+# =====================================================
+
 if "step" not in st.session_state:
     st.session_state.step = 0
 
@@ -35,8 +29,9 @@ if "init_sliders" not in st.session_state:
     st.session_state.init_sliders = True
 
 
-
-#BLOCO 2 — GOOGLE LOW READ ARCHITECTURE
+# =====================================================
+# GOOGLE LOW READ ARCHITECTURE
+# =====================================================
 
 sheet = None
 google_ok = False
@@ -64,10 +59,8 @@ except Exception as e:
 
 @st.cache_data(ttl=900)
 def load_population():
-
     if not google_ok or sheet is None:
         return pd.DataFrame()
-
     try:
         df = pd.DataFrame(sheet.get_all_records())
         for c in ["O","C","E","A","N"]:
@@ -78,16 +71,6 @@ def load_population():
         return pd.DataFrame()
 
 
-def get_population_if_needed():
-    if st.session_state.step < 5:
-        return pd.DataFrame()
-
-    if "df_pop" not in st.session_state:
-        st.session_state.df_pop = load_population()
-
-    return st.session_state.df_pop
-
-
 def save_result(name, s):
 
     if not google_ok or sheet is None:
@@ -96,8 +79,11 @@ def save_result(name, s):
     row = [
         datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
         name,
-        float(s["O"]), float(s["C"]), float(s["E"]),
-        float(s["A"]), float(s["N"])
+        float(s["O"]),
+        float(s["C"]),
+        float(s["E"]),
+        float(s["A"]),
+        float(s["N"])
     ]
 
     for _ in range(3):
@@ -108,7 +94,9 @@ def save_result(name, s):
             time.sleep(2)
 
 
-#BLOCO 3 — LOGIN
+# =====================================================
+# LOGIN
+# =====================================================
 
 PASSWORD = "1618"
 
@@ -128,7 +116,10 @@ if not st.session_state.auth:
 
     st.stop()
 
-#BLOCO 4 — QUESTIONÁRIO OCEAN
+
+# =====================================================
+# QUESTIONÁRIO OCEAN
+# =====================================================
 
 QUESTIONS = {
     "O":[("o1","Tenho imaginação rica",False),("o2","Gosto de ideias abstratas",False),
@@ -157,6 +148,10 @@ TOTAL_STEPS = 5
 
 st.progress(st.session_state.step / TOTAL_STEPS)
 
+# =====================================================
+# ETAPAS DO QUESTIONÁRIO
+# =====================================================
+
 if st.session_state.step < TOTAL_STEPS:
 
     p = pillars[st.session_state.step]
@@ -169,21 +164,28 @@ if st.session_state.step < TOTAL_STEPS:
 
     if c1.button("⬅ Voltar") and st.session_state.step > 0:
         st.session_state.step -= 1
+        st.session_state.saved = False
         st.rerun()
 
     if c2.button("Próximo ➡"):
         st.session_state.step += 1
+        st.session_state.saved = False
         st.rerun()
 
-#BLOCO 5 — CÁLCULO
-else:
+
+# =====================================================
+# CÁLCULO SOMENTE NO FINAL REAL
+# =====================================================
+
+if st.session_state.step == TOTAL_STEPS:
 
     scores = {}
 
     for p in QUESTIONS:
         vals = []
+
         for qid, _, rev in QUESTIONS[p]:
-            v = int(st.session_state[qid])
+            v = int(st.session_state.get(qid, 3))
             if rev:
                 v = 6 - v
             vals.append(v)
@@ -194,7 +196,9 @@ else:
     st.session_state.scores = scores
 
 
-#BLOCO 6 — RESULTADOS + MATRIZ + RADAR
+# =====================================================
+# RESULTADOS
+# =====================================================
 
 if st.session_state.scores is None:
     st.stop()
@@ -202,22 +206,33 @@ if st.session_state.scores is None:
 s = st.session_state.scores
 name = st.text_input("Nome", "Participante")
 
-if not st.session_state.saved and sum(s.values()) != 250:
+# SAVE APENAS UMA VEZ E SOMENTE SE NÃO FOR 50 FALSO
+if (
+    st.session_state.step == TOTAL_STEPS
+    and not st.session_state.saved
+    and sum(s.values()) != 250
+):
     save_result(name, s)
     st.session_state.saved = True
 
 
-st.header("Executive Snapshot")
+st.header("Executive Profile")
 
 cols = st.columns(5)
+
 for i, k in enumerate(["O","C","E","A","N"]):
     val = s[k] if k != "N" else 100 - s[k]
     cols[i].metric(k, round(val,1))
 
 
+# =====================================================
 # MATRIZ ESTRATÉGICA
+# =====================================================
+
 x = (s["O"] + s["E"]) / 2
 y = (s["C"] + (100 - s["N"])) / 2
+
+st.subheader("Matriz Estratégica")
 
 fig, ax = plt.subplots(figsize=(6,6))
 ax.axhline(50, linestyle="--")
@@ -227,10 +242,16 @@ ax.set_xlim(0,100)
 ax.set_ylim(0,100)
 ax.set_xlabel("Visão & Influência")
 ax.set_ylabel("Execução & Consistência")
+
 st.pyplot(fig)
 
 
-# RADAR
+# =====================================================
+# RADAR EXECUTIVO
+# =====================================================
+
+st.subheader("Radar Comportamental")
+
 labels = ["O","C","E","A","N"]
 vals = [s["O"], s["C"], s["E"], s["A"], 100 - s["N"]]
 
@@ -243,52 +264,5 @@ ax2 = plt.subplot(polar=True)
 ax2.plot(angles, vals)
 ax2.fill(angles, vals, alpha=0.15)
 ax2.set_ylim(0,100)
+
 st.pyplot(fig2)
-
-
-# BLOCO 7 — PDF EXECUTIVO
-def gerar_pdf(name, s, fig_matrix, fig_radar):
-
-    buffer = io.BytesIO()
-    c = canvas.Canvas(buffer, pagesize=A4)
-    width, height = A4
-
-    c.setFont("Helvetica-Bold", 16)
-    c.drawString(2*cm, height-2*cm, "Executive Personality Report")
-
-    c.setFont("Helvetica", 11)
-    c.drawString(2*cm, height-3*cm, f"Nome: {name}")
-    c.drawString(2*cm, height-3.7*cm, f"Data: {datetime.now().strftime('%Y-%m-%d')}")
-
-    y_pos = height - 5*cm
-    for k in ["O","C","E","A","N"]:
-        val = s[k] if k != "N" else 100 - s[k]
-        c.drawString(2*cm, y_pos, f"{k}: {round(val,1)}")
-        y_pos -= 0.7*cm
-
-    # MATRIX IMAGE
-    img1 = io.BytesIO()
-    fig_matrix.savefig(img1, format="PNG", bbox_inches="tight")
-    img1.seek(0)
-    c.drawImage(ImageReader(img1), 2*cm, height-16*cm, width=12*cm, height=10*cm)
-
-    c.showPage()
-
-    # RADAR IMAGE
-    img2 = io.BytesIO()
-    fig_radar.savefig(img2, format="PNG", bbox_inches="tight")
-    img2.seek(0)
-    c.drawImage(ImageReader(img2), 2*cm, height-16*cm, width=12*cm, height=10*cm)
-
-    c.save()
-    buffer.seek(0)
-    return buffer
-
-
-pdf = gerar_pdf(name, s, fig, fig2)
-
-st.download_button(
-    "📄 Download Executive Report",
-    pdf,
-    "Executive_Report.pdf"
-)
