@@ -73,7 +73,7 @@ if not st.session_state.auth:
     st.stop()
 
 # ────────────────────────────────────────────────
-#  GOOGLE SHEETS (só tenta conectar depois da autenticação)
+# GOOGLE SHEETS – conexão única + minimização de leituras
 # ────────────────────────────────────────────────
 
 sheet = None
@@ -93,36 +93,100 @@ try:
     google_ok = True
     st.sidebar.success("Google Sheets conectado")
 except Exception as e:
-    st.sidebar.error("Google OFF")
+    st.sidebar.error("Google Sheets OFF")
     st.sidebar.code(str(e))
 
-@st.cache_data(ttl=900)
-def load_population():
+
+# Inicializa o DataFrame populacional no session_state (carrega só UMA VEZ por sessão)
+if "pop_df" not in st.session_state:
+    st.session_state.pop_df = None
+    st.session_state.population_load_attempted = False
+
+
+# Função de carregamento com retry leve – executada APENAS se ainda não tentou
+def try_load_population():
     if not google_ok or sheet is None:
         return pd.DataFrame()
-    try:
-        df = pd.DataFrame(sheet.get_all_records())
-        for c in ["O", "C", "E", "A", "N"]:
-            if c in df.columns:
-                df[c] = pd.to_numeric(df[c], errors="coerce")
-        return df
-    except:
+
+    if st.session_state.population_load_attempted:
+        return st.session_state.pop_df
+
+    with st.spinner("Carregando dados populacionais (executado apenas uma vez por sessão)..."):
+        for attempt in range(3):
+            try:
+                df = pd.DataFrame(sheet.get_all_records())
+                for c in ["O", "C", "E", "A", "N"]:
+                    if c in df.columns:
+                        df[c] = pd.to_numeric(df[c], errors="coerce")
+                st.session_state.pop_df = df
+                st.session_state.population_load_attempted = True
+                st.success("Dados populacionais carregados com sucesso.")
+                return df
+
+            except Exception as e:
+                error_str = str(e).lower()
+                if "quota" in error_str or "429" in error_str or "rate limit" in error_str:
+                    wait = 20 * (attempt + 1)  # 20s → 40s → 60s
+                    st.warning(f"Limite de quota atingido. Tentando novamente em {wait} segundos... (tentativa {attempt+1}/3)")
+                    time.sleep(wait)
+                else:
+                    st.error(f"Erro ao carregar população: {e}")
+                    break
+
+        # Se falhar todas as tentativas
+        st.session_state.population_load_attempted = True
+        st.session_state.pop_df = pd.DataFrame()
+        st.warning("Não foi possível carregar os dados populacionais (limite de API). Comparações desabilitadas.")
         return pd.DataFrame()
+
+
+# Função auxiliar para obter os dados (nunca faz nova leitura se já carregou ou tentou)
+@st.cache_data(ttl=3600, show_spinner=False)  # cache extra de segurança, mas principal controle é session_state
+def get_population_data():
+    if st.session_state.pop_df is None and not st.session_state.population_load_attempted:
+        return try_load_population()
+    return st.session_state.pop_df
+
+
+# ────────────────────────────────────────────────
+# SALVAMENTO – com retry maior e controle de duplicatas
+# ────────────────────────────────────────────────
 
 def save_result(name, s):
     if not google_ok or sheet is None:
+        st.info("Salvamento desabilitado: conexão com Google Sheets não disponível.")
         return
+
+    if st.session_state.get("result_saved", False):
+        return  # evita salvar múltiplas vezes no mesmo rerun
+
     row = [
         datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-        name,
-        float(s["O"]), float(s["C"]), float(s["E"]), float(s["A"]), float(s["N"])
+        name.strip() if name else "Anônimo",
+        float(s.get("O", 0)),
+        float(s.get("C", 0)),
+        float(s.get("E", 0)),
+        float(s.get("A", 0)),
+        float(s.get("N", 0))
     ]
-    for _ in range(3):
+
+    for attempt in range(4):
         try:
             sheet.append_row(row)
+            st.session_state.result_saved = True
+            st.success("Resultado salvo com sucesso no Google Sheets!")
             return
-        except:
-            time.sleep(2)
+        except Exception as e:
+            error_str = str(e).lower()
+            if "quota" in error_str or "429" in error_str:
+                wait = 15 * (attempt + 1)   # 15s, 30s, 45s, 60s
+                st.warning(f"Quota excedida ao salvar. Tentando novamente em {wait}s... ({attempt+1}/4)")
+                time.sleep(wait)
+            else:
+                st.error(f"Erro ao salvar resultado: {e}")
+                break
+    else:
+        st.error("Não foi possível salvar o resultado após várias tentativas (limite de API).")
 
 # ────────────────────────────────────────────────
 #  QUESTIONÁRIO
