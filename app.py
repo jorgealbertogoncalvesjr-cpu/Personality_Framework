@@ -1,12 +1,11 @@
 # =====================================================
-# EXECUTIVE PERSONALITY ENGINE — STABLE EDITION
+# EXECUTIVE PERSONALITY ENGINE — CLEAN STABLE VERSION
 # =====================================================
 
 import streamlit as st
 import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
-import io
 import time
 from datetime import datetime
 import gspread
@@ -14,7 +13,7 @@ from google.oauth2.service_account import Credentials
 
 st.set_page_config(page_title="Executive Personality Engine", layout="centered")
 
-# ---------------- SESSION SAFE ----------------
+# ---------------- SESSION INIT ----------------
 if "step" not in st.session_state:
     st.session_state.step = 0
 
@@ -24,11 +23,11 @@ if "scores" not in st.session_state:
 if "saved" not in st.session_state:
     st.session_state.saved = False
 
-if "init" not in st.session_state:
+if "init_sliders" not in st.session_state:
     for p in ["o","c","e","a","n"]:
         for i in range(1,8):
             st.session_state[f"{p}{i}"] = 3
-    st.session_state.init = True
+    st.session_state.init_sliders = True
 
 
 # ---------------- GOOGLE CONNECT ----------------
@@ -52,11 +51,11 @@ try:
     st.sidebar.success("Google Sheets conectado")
 
 except Exception as e:
-    st.sidebar.error("Google OFF")
+    st.sidebar.error("Google Sheets OFF")
     st.sidebar.code(str(e))
 
 
-# ---------------- CACHE POPULATION ----------------
+# ---------------- LOAD POPULATION (CACHE) ----------------
 @st.cache_data(ttl=900)
 def load_population():
     if not google_ok or sheet is None:
@@ -64,25 +63,21 @@ def load_population():
 
     try:
         df = pd.DataFrame(sheet.get_all_records())
-
         for c in ["O","C","E","A","N"]:
             if c in df.columns:
                 df[c] = pd.to_numeric(df[c], errors="coerce")
-
         return df
-
-    except Exception:
+    except:
         return pd.DataFrame()
 
 
-# ---------- LOAD ONCE PER SESSION ----------
 if "df_pop" not in st.session_state:
     st.session_state.df_pop = load_population()
 
 df_pop = st.session_state.df_pop
 
 
-# ---------------- SAVE RESULT (RETRY SAFE) ----------------
+# ---------------- SAVE RESULT ----------------
 def save_result(name, s):
 
     if not google_ok or sheet is None:
@@ -99,22 +94,25 @@ def save_result(name, s):
         try:
             sheet.append_row(row)
             return
-        except Exception:
+        except:
             time.sleep(2)
 
 
-# ---------------- PERCENTILE FIX ----------------
+# ---------------- PERCENTILE ----------------
 def percentile(value, col):
 
     if df_pop.empty or col not in df_pop.columns:
         return 50
 
     series = df_pop[col].dropna()
-
     if len(series) == 0:
         return 50
 
     return int((series < value).mean() * 100)
+
+# =====================================================
+# ATAPA II LOGIN + QUESTIONARIO
+# =====================================================
 
 PASSWORD = "1618"
 
@@ -165,31 +163,48 @@ st.progress(st.session_state.step / TOTAL_STEPS)
 if st.session_state.step < TOTAL_STEPS:
 
     p = pillars[st.session_state.step]
-    st.subheader(p)
+    st.subheader(f"Pilar: {p}")
 
     for qid, text, _ in QUESTIONS[p]:
-        st.slider(text, 1, 5, key=qid)
+
+        st.slider(
+            label=text,
+            min_value=1,
+            max_value=5,
+            key=qid
+        )
 
     c1, c2 = st.columns(2)
 
-    if c1.button("Voltar") and st.session_state.step > 0:
+    if c1.button("⬅ Voltar") and st.session_state.step > 0:
         st.session_state.step -= 1
         st.rerun()
 
-    if c2.button("Próximo"):
+    if c2.button("Próximo ➡"):
         st.session_state.step += 1
         st.rerun()
+
+
+
+# =====================================================
+# ETAPA III Calculo
+# =====================================================
 
 else:
 
     scores = {}
 
     for p in QUESTIONS:
+
         vals = []
+
         for qid, _, rev in QUESTIONS[p]:
-            v = st.session_state[qid]
+
+            v = int(st.session_state[qid])
+
             if rev:
                 v = 6 - v
+
             vals.append(v)
 
         raw = sum(vals) / len(vals)
@@ -198,13 +213,17 @@ else:
     st.session_state.scores = scores
 
 
+# =====================================================
+# ETAPA IV RESULTADOS
+# =====================================================
+
+
 if st.session_state.scores is None:
     st.stop()
 
 s = st.session_state.scores
 name = st.text_input("Nome", "Participante")
 
-# -------- SAVE ONLY VALID --------
 if not st.session_state.saved and sum(s.values()) != 250:
     save_result(name, s)
     st.session_state.saved = True
@@ -218,7 +237,7 @@ for i, k in enumerate(["O","C","E","A","N"]):
     cols[i].metric(k, round(val,1))
 
 
-# -------- MATRIX --------
+# ---------- MATRIX ----------
 x = (s["O"] + s["E"]) / 2
 y = (s["C"] + (100 - s["N"])) / 2
 
@@ -234,7 +253,7 @@ else:
     st.error("Zona de Desenvolvimento")
 
 
-# -------- PERCENTILE --------
+# ---------- PERCENTILE ----------
 st.subheader("Executive Percentile")
 
 for k in ["O","C","E","A","N"]:
@@ -242,9 +261,11 @@ for k in ["O","C","E","A","N"]:
     pct = percentile(val, k)
     st.metric(f"{k} Percentile", f"{pct}%")
 
+# =====================================================
+# ETAPA V BENCHMARK
+# =====================================================
 
-# -------- BENCHMARK --------
-st.subheader("Benchmark")
+st.subheader("Benchmark Populacional")
 
 if not df_pop.empty:
 
