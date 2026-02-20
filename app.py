@@ -149,7 +149,7 @@ TOTAL_STEPS = 5
 st.progress(st.session_state.step / TOTAL_STEPS)
 
 # =====================================================
-# ETAPAS DO QUESTIONÁRIO
+# QUESTIONÁRIO COM PERSISTÊNCIA REAL
 # =====================================================
 
 if st.session_state.step < TOTAL_STEPS:
@@ -158,7 +158,20 @@ if st.session_state.step < TOTAL_STEPS:
     st.subheader(f"Pilar {p}")
 
     for qid, text, _ in QUESTIONS[p]:
-        st.slider(text, 1, 5, key=qid)
+
+        # garante inicialização única
+        if qid not in st.session_state:
+            st.session_state[qid] = 3
+
+        val = st.slider(
+            text,
+            min_value=1,
+            max_value=5,
+            value=st.session_state[qid],   # <<< ESSENCIAL
+            key=qid
+        )
+
+        st.session_state[qid] = val   # <<< garante persistência
 
     c1, c2 = st.columns(2)
 
@@ -172,30 +185,6 @@ if st.session_state.step < TOTAL_STEPS:
         st.session_state.saved = False
         st.rerun()
 
-
-# =====================================================
-# CÁLCULO SOMENTE NO FINAL REAL
-# =====================================================
-
-if st.session_state.step == TOTAL_STEPS:
-
-    scores = {}
-
-    for p in QUESTIONS:
-        vals = []
-
-        for qid, _, rev in QUESTIONS[p]:
-            v = int(st.session_state.get(qid, 3))
-            if rev:
-                v = 6 - v
-            vals.append(v)
-
-        raw = sum(vals) / len(vals)
-        scores[p] = round((raw - 1) / 4 * 100, 1)
-
-    st.session_state.scores = scores
-
-
 # =====================================================
 # RESULTADOS
 # =====================================================
@@ -207,11 +196,27 @@ s = st.session_state.scores
 name = st.text_input("Nome", "Participante")
 
 # SAVE APENAS UMA VEZ E SOMENTE SE NÃO FOR 50 FALSO
-if (
-    st.session_state.step == TOTAL_STEPS
-    and not st.session_state.saved
-    and sum(s.values()) != 250
-):
+if st.session_state.step == TOTAL_STEPS:
+
+    scores = {}
+
+    for p in QUESTIONS:
+
+        vals = []
+
+        for qid, _, rev in QUESTIONS[p]:
+
+            v = int(st.session_state.get(qid, 3))
+
+            if rev:
+                v = 6 - v
+
+            vals.append(v)
+
+        raw = sum(vals) / len(vals)
+        scores[p] = round((raw - 1) / 4 * 100, 1)
+
+    st.session_state.scores = scores:
     save_result(name, s)
     st.session_state.saved = True
 
