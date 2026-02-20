@@ -23,9 +23,34 @@ if "saved" not in st.session_state:
     st.session_state.saved = False
 
 if "init_sliders" not in st.session_state:
-    for p in ["o","c","e","a","n"]:
-        for i in range(1,8):
-            st.session_state[f"{p}{i}"] = 3
+
+if st.session_state.step < TOTAL_STEPS:
+
+    p = pillars[st.session_state.step]
+    st.subheader(f"Pilar {p}")
+
+    for qid, text, _ in QUESTIONS[p]:
+
+        st.slider(
+            label=text,
+            min_value=1,
+            max_value=5,
+            value=st.session_state.get(qid, 3),
+            key=qid
+        )
+
+    c1, c2 = st.columns(2)
+
+    if c1.button("⬅ Voltar") and st.session_state.step > 0:
+        st.session_state.step -= 1
+        st.session_state.saved = False
+        st.rerun()
+
+    if c2.button("Próximo ➡"):
+        st.session_state.step += 1
+        st.session_state.saved = False
+        st.rerun()
+    
     st.session_state.init_sliders = True
 
 
