@@ -9,9 +9,40 @@ from google.oauth2.service_account import Credentials
 
 st.set_page_config(page_title="Executive Personality Engine", layout="centered")
 
-# =====================================================
-# SESSION INIT
-# =====================================================
+# ────────────────────────────────────────────────
+#  DEFINIÇÕES FIXAS – colocar no topo!
+# ────────────────────────────────────────────────
+
+QUESTIONS = {
+    "O": [("o1", "Tenho imaginação rica", False), ("o2", "Gosto de ideias abstratas", False),
+          ("o3", "Interesse por arte", False), ("o4", "Prefiro rotina", True),
+          ("o5", "Sou curioso", False), ("o6", "Evito filosofia", True), ("o7", "Penso no futuro", False)],
+
+    "C": [("c1", "Sou organizado", False), ("c2", "Planejo antes", False),
+          ("c3", "Cumpro prazos", False), ("c4", "Deixo tarefas", True),
+          ("c5", "Sou disciplinado", False), ("c6", "Procrastino", True), ("c7", "Sou responsável", False)],
+
+    "E": [("e1", "Gosto de socializar", False), ("e2", "Inicio conversas", False),
+          ("e3", "Sou expressivo", False), ("e4", "Prefiro silêncio", True),
+          ("e5", "Confortável em grupos", False), ("e6", "Evito atenção", True), ("e7", "Sou entusiasmado", False)],
+
+    "A": [("a1", "Sou empático", False), ("a2", "Confio nas pessoas", False),
+          ("a3", "Evito conflitos", False), ("a4", "Sou crítico", True),
+          ("a5", "Gosto de ajudar", False), ("a6", "Sou duro", True), ("a7", "Valorizo cooperação", False)],
+
+    "N": [("n1", "Preocupo-me fácil", False), ("n2", "Fico ansioso", False),
+          ("n3", "Mudo humor", False), ("n4", "Sou calmo", True),
+          ("n5", "Sinto tensão", False), ("n6", "Raramente estressado", True), ("n7", "Reajo forte", False)]
+}
+
+pillars = list(QUESTIONS.keys())
+TOTAL_STEPS = len(pillars)          # 5
+
+PASSWORD = "1618"
+
+# ────────────────────────────────────────────────
+#  SESSION STATE INICIALIZAÇÃO
+# ────────────────────────────────────────────────
 
 if "step" not in st.session_state:
     st.session_state.step = 0
@@ -22,111 +53,12 @@ if "scores" not in st.session_state:
 if "saved" not in st.session_state:
     st.session_state.saved = False
 
-
-# =====================================================
-# QUESTIONÁRIO (PERSISTÊNCIA NATIVA DO STREAMLIT)
-# =====================================================
-
-if st.session_state.step < TOTAL_STEPS:
-
-    p = pillars[st.session_state.step]
-    st.subheader(f"Pilar {p}")
-
-    for qid, text, _ in QUESTIONS[p]:
-
-        st.slider(
-            label=text,
-            min_value=1,
-            max_value=5,
-            value=st.session_state.get(qid, 3),   # default seguro
-            key=qid
-        )
-
-    c1, c2 = st.columns(2)
-
-    if c1.button("⬅ Voltar") and st.session_state.step > 0:
-        st.session_state.step -= 1
-        st.session_state.saved = False
-        st.rerun()
-
-    if c2.button("Próximo ➡"):
-        st.session_state.step += 1
-        st.session_state.saved = False
-        st.rerun()
-
-# =====================================================
-# GOOGLE LOW READ ARCHITECTURE
-# =====================================================
-
-sheet = None
-google_ok = False
-
-try:
-    scope = [
-        "https://www.googleapis.com/auth/spreadsheets",
-        "https://www.googleapis.com/auth/drive"
-    ]
-
-    creds = Credentials.from_service_account_info(
-        st.secrets["gcp_service_account"],
-        scopes=scope
-    )
-
-    client = gspread.authorize(creds)
-    sheet = client.open_by_url(st.secrets["gsheets"]["spreadsheet"]).sheet1
-    google_ok = True
-    st.sidebar.success("Google Sheets conectado")
-
-except Exception as e:
-    st.sidebar.error("Google OFF")
-    st.sidebar.code(str(e))
-
-
-@st.cache_data(ttl=900)
-def load_population():
-    if not google_ok or sheet is None:
-        return pd.DataFrame()
-    try:
-        df = pd.DataFrame(sheet.get_all_records())
-        for c in ["O","C","E","A","N"]:
-            if c in df.columns:
-                df[c] = pd.to_numeric(df[c], errors="coerce")
-        return df
-    except:
-        return pd.DataFrame()
-
-
-def save_result(name, s):
-
-    if not google_ok or sheet is None:
-        return
-
-    row = [
-        datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-        name,
-        float(s["O"]),
-        float(s["C"]),
-        float(s["E"]),
-        float(s["A"]),
-        float(s["N"])
-    ]
-
-    for _ in range(3):
-        try:
-            sheet.append_row(row)
-            return
-        except:
-            time.sleep(2)
-
-
-# =====================================================
-# LOGIN
-# =====================================================
-
-PASSWORD = "1618"
-
 if "auth" not in st.session_state:
     st.session_state.auth = False
+
+# ────────────────────────────────────────────────
+#  AUTENTICAÇÃO
+# ────────────────────────────────────────────────
 
 if not st.session_state.auth:
     st.title("Executive Personality Assessment")
@@ -138,45 +70,65 @@ if not st.session_state.auth:
             st.rerun()
         else:
             st.error("Senha incorreta")
-
     st.stop()
 
+# ────────────────────────────────────────────────
+#  GOOGLE SHEETS (só tenta conectar depois da autenticação)
+# ────────────────────────────────────────────────
 
-# =====================================================
-# QUESTIONÁRIO OCEAN
-# =====================================================
+sheet = None
+google_ok = False
 
-QUESTIONS = {
-    "O":[("o1","Tenho imaginação rica",False),("o2","Gosto de ideias abstratas",False),
-         ("o3","Interesse por arte",False),("o4","Prefiro rotina",True),
-         ("o5","Sou curioso",False),("o6","Evito filosofia",True),("o7","Penso no futuro",False)],
+try:
+    scope = [
+        "https://www.googleapis.com/auth/spreadsheets",
+        "https://www.googleapis.com/auth/drive"
+    ]
+    creds = Credentials.from_service_account_info(
+        st.secrets["gcp_service_account"],
+        scopes=scope
+    )
+    client = gspread.authorize(creds)
+    sheet = client.open_by_url(st.secrets["gsheets"]["spreadsheet"]).sheet1
+    google_ok = True
+    st.sidebar.success("Google Sheets conectado")
+except Exception as e:
+    st.sidebar.error("Google OFF")
+    st.sidebar.code(str(e))
 
-    "C":[("c1","Sou organizado",False),("c2","Planejo antes",False),
-         ("c3","Cumpro prazos",False),("c4","Deixo tarefas",True),
-         ("c5","Sou disciplinado",False),("c6","Procrastino",True),("c7","Sou responsável",False)],
+@st.cache_data(ttl=900)
+def load_population():
+    if not google_ok or sheet is None:
+        return pd.DataFrame()
+    try:
+        df = pd.DataFrame(sheet.get_all_records())
+        for c in ["O", "C", "E", "A", "N"]:
+            if c in df.columns:
+                df[c] = pd.to_numeric(df[c], errors="coerce")
+        return df
+    except:
+        return pd.DataFrame()
 
-    "E":[("e1","Gosto de socializar",False),("e2","Inicio conversas",False),
-         ("e3","Sou expressivo",False),("e4","Prefiro silêncio",True),
-         ("e5","Confortável em grupos",False),("e6","Evito atenção",True),("e7","Sou entusiasmado",False)],
+def save_result(name, s):
+    if not google_ok or sheet is None:
+        return
+    row = [
+        datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        name,
+        float(s["O"]), float(s["C"]), float(s["E"]), float(s["A"]), float(s["N"])
+    ]
+    for _ in range(3):
+        try:
+            sheet.append_row(row)
+            return
+        except:
+            time.sleep(2)
 
-    "A":[("a1","Sou empático",False),("a2","Confio nas pessoas",False),
-         ("a3","Evito conflitos",False),("a4","Sou crítico",True),
-         ("a5","Gosto de ajudar",False),("a6","Sou duro",True),("a7","Valorizo cooperação",False)],
-
-    "N":[("n1","Preocupo-me fácil",False),("n2","Fico ansioso",False),
-         ("n3","Mudo humor",False),("n4","Sou calmo",True),
-         ("n5","Sinto tensão",False),("n6","Raramente estressado",True),("n7","Reajo forte",False)]
-}
-
-pillars = list(QUESTIONS.keys())
-TOTAL_STEPS = 5
+# ────────────────────────────────────────────────
+#  QUESTIONÁRIO
+# ────────────────────────────────────────────────
 
 st.progress(st.session_state.step / TOTAL_STEPS)
-
-
-# =====================================================
-# QUESTIONÁRIO COM PERSISTÊNCIA CORRETA (SEM CONFLITO)
-# =====================================================
 
 if st.session_state.step < TOTAL_STEPS:
 
@@ -184,12 +136,12 @@ if st.session_state.step < TOTAL_STEPS:
     st.subheader(f"Pilar {p}")
 
     for qid, text, _ in QUESTIONS[p]:
-
+        # value= st.session_state.get(qid, 3)  → mantém valor anterior ou default
         st.slider(
             label=text,
             min_value=1,
             max_value=5,
-            value=st.session_state.get(qid, 3),  # usa default sem sobrescrever
+            value=st.session_state.get(qid, 3),
             key=qid
         )
 
@@ -197,87 +149,89 @@ if st.session_state.step < TOTAL_STEPS:
 
     if c1.button("⬅ Voltar") and st.session_state.step > 0:
         st.session_state.step -= 1
-        st.session_state.saved = False
         st.rerun()
 
     if c2.button("Próximo ➡"):
         st.session_state.step += 1
-        st.session_state.saved = False
         st.rerun()
 
-# =====================================================
-# RESULTADOS
-# =====================================================
+# ────────────────────────────────────────────────
+#  CÁLCULO DE SCORES (só quando terminou todas as perguntas)
+# ────────────────────────────────────────────────
 
-if st.session_state.scores is None:
-    st.stop()
+if st.session_state.step == TOTAL_STEPS and st.session_state.scores is None:
 
-s = st.session_state.scores
-name = st.text_input("Nome", "Participante")
+    scores = {}
+    for p in pillars:
+        values = []
+        inverted = []
+        for qid, _, invert in QUESTIONS[p]:
+            val = st.session_state.get(qid, 3)
+            if invert:
+                inverted.append(val)
+            else:
+                values.append(val)
+        
+        # Média normal + média invertida (convertida)
+        normal_mean = np.mean(values) if values else 3
+        invert_mean = np.mean([6 - v for v in inverted]) if inverted else 3
+        scores[p] = (normal_mean + invert_mean) / 2 * 20   # escala para ~0–100
 
-# -----------------------------------------------------
-# SAVE — APENAS UMA VEZ E SOMENTE NO FINAL REAL
-# -----------------------------------------------------
-if (
-    st.session_state.step == TOTAL_STEPS
-    and not st.session_state.saved
-    and s is not None
-    and sum(s.values()) != 250   # evita salvar score neutro falso
-):
-    save_result(name, s)
-    st.session_state.saved = True
+    st.session_state.scores = scores
 
+# ────────────────────────────────────────────────
+#  TELA FINAL – RESULTADOS
+# ────────────────────────────────────────────────
 
-# =====================================================
-# EXECUTIVE PROFILE
-# =====================================================
+if st.session_state.step == TOTAL_STEPS:
 
-st.header("Executive Profile")
+    if st.session_state.scores is None:
+        st.error("Erro interno: scores não calculados.")
+        st.stop()
 
-cols = st.columns(5)
+    s = st.session_state.scores
+    name = st.text_input("Nome", "Participante")
 
-for i, k in enumerate(["O","C","E","A","N"]):
-    val = s[k] if k != "N" else 100 - s[k]
-    cols[i].metric(k, round(val, 1))
+    # Salva apenas uma vez
+    if not st.session_state.saved and sum(s.values()) > 10:  # evita salvar zeros/nulos
+        save_result(name, s)
+        st.session_state.saved = True
+        st.success("Resultado salvo!")
 
-# =====================================================
-# MATRIZ ESTRATÉGICA
-# =====================================================
+    st.header("Executive Profile")
 
-x = (s["O"] + s["E"]) / 2
-y = (s["C"] + (100 - s["N"])) / 2
+    cols = st.columns(5)
+    for i, k in enumerate(["O", "C", "E", "A", "N"]):
+        val = s[k] if k != "N" else 100 - s[k]
+        cols[i].metric(k, round(val, 1))
 
-st.subheader("Matriz Estratégica")
+    # Matriz estratégica
+    x = (s["O"] + s["E"]) / 2
+    y = (s["C"] + (100 - s["N"])) / 2
 
-fig, ax = plt.subplots(figsize=(6,6))
-ax.axhline(50, linestyle="--")
-ax.axvline(50, linestyle="--")
-ax.scatter(x, y, s=200)
-ax.set_xlim(0,100)
-ax.set_ylim(0,100)
-ax.set_xlabel("Visão & Influência")
-ax.set_ylabel("Execução & Consistência")
+    st.subheader("Matriz Estratégica")
+    fig, ax = plt.subplots(figsize=(6, 6))
+    ax.axhline(50, linestyle="--", color="gray")
+    ax.axvline(50, linestyle="--", color="gray")
+    ax.scatter(x, y, s=200, color="teal")
+    ax.set_xlim(0, 100)
+    ax.set_ylim(0, 100)
+    ax.set_xlabel("Visão & Influência")
+    ax.set_ylabel("Execução & Consistência")
+    st.pyplot(fig)
 
-st.pyplot(fig)
+    # Radar
+    st.subheader("Radar Comportamental")
+    labels = ["O", "C", "E", "A", "N (inv)"]
+    vals = [s["O"], s["C"], s["E"], s["A"], 100 - s["N"]]
+    angles = np.linspace(0, 2 * np.pi, len(labels), endpoint=False).tolist()
+    vals += vals[:1]
+    angles += angles[:1]
 
-
-# =====================================================
-# RADAR EXECUTIVO
-# =====================================================
-
-st.subheader("Radar Comportamental")
-
-labels = ["O","C","E","A","N"]
-vals = [s["O"], s["C"], s["E"], s["A"], 100 - s["N"]]
-
-angles = np.linspace(0, 2*np.pi, len(labels), endpoint=False).tolist()
-vals += vals[:1]
-angles += angles[:1]
-
-fig2 = plt.figure(figsize=(5,5))
-ax2 = plt.subplot(polar=True)
-ax2.plot(angles, vals)
-ax2.fill(angles, vals, alpha=0.15)
-ax2.set_ylim(0,100)
-
-st.pyplot(fig2)
+    fig2, ax2 = plt.subplots(figsize=(5, 5), subplot_kw=dict(polar=True))
+    ax2.plot(angles, vals, linewidth=2)
+    ax2.fill(angles, vals, alpha=0.15)
+    ax2.set_ylim(0, 100)
+    ax2.set_xticks(angles[:-1])
+    ax2.set_xticklabels(labels)
+    st.pyplot(fig2)
