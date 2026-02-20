@@ -165,6 +165,9 @@ def save_result(name, s):
 
 
 
+# =====================================================
+# CÁLCULO FINAL (EXECUTA APENAS NA ÚLTIMA ETAPA)
+# =====================================================
 else:
 
     scores = {}
@@ -174,9 +177,17 @@ else:
         vals = []
 
         for qid, _, rev in QUESTIONS[p]:
+
+            # segurança: garante que resposta existe
+            if qid not in st.session_state:
+                st.error(f"Resposta ausente: {qid}")
+                st.stop()
+
             v = int(st.session_state[qid])
+
             if rev:
                 v = 6 - v
+
             vals.append(v)
 
         raw = sum(vals) / len(vals)
@@ -185,56 +196,84 @@ else:
     st.session_state.scores = scores
 
 
-# ---------- RESULTS ----------
+# =====================================================
+# RESULTS
+# =====================================================
 if st.session_state.scores is None:
     st.stop()
 
 s = st.session_state.scores
 name = st.text_input("Nome", "Participante")
 
-if not st.session_state.saved and sum(s.values()) != 250:
+
+# -----------------------------------------------------
+# SAVE — EVITA SALVAR SCORE DEFAULT (50)
+# -----------------------------------------------------
+if (
+    not st.session_state.saved
+    and s is not None
+    and sum(s.values()) != 250     # evita salvar tudo 50
+):
     save_result(name, s)
     st.session_state.saved = True
 
 
+# =====================================================
+# EXECUTIVE PROFILE
+# =====================================================
 st.header("Executive Profile")
 
 cols = st.columns(5)
+
 for i, k in enumerate(["O","C","E","A","N"]):
+
     val = s[k] if k != "N" else 100 - s[k]
-    cols[i].metric(k, round(val,1))
+    cols[i].metric(k, round(val, 1))
 
 
-# ---------- LOAD POPULATION ONLY NOW ----------
+# =====================================================
+# LOAD POPULATION — APENAS AGORA (LOW READ)
+# =====================================================
 df_pop = get_population_if_needed()
 
 
-# ---------- PERCENTILE ----------
+# =====================================================
+# EXECUTIVE PERCENTILE (SEGURO)
+# =====================================================
 st.subheader("Executive Percentile")
 
 for k in ["O","C","E","A","N"]:
+
     val = s[k] if k != "N" else 100 - s[k]
-    pct = percentile(val, k)
+
+    # se base vazia → neutro
+    if df_pop.empty or k not in df_pop.columns:
+        pct = 50
+    else:
+        pct = percentile(val, k)
+
     st.metric(f"{k} Percentile", f"{pct}%")
 
 
-# ---------- BENCHMARK ----------
+# =====================================================
+# BENCHMARK (SÓ SE HOUVER BASE)
+# =====================================================
 st.subheader("Benchmark")
 
-if not df_pop.empty:
+if not df_pop.empty and len(df_pop) > 3:
 
     for k in ["O","C","E","A","N"]:
+
         user_val = s[k] if k != "N" else 100 - s[k]
         pop_mean = df_pop[k].mean()
 
         st.write(f"**{k}**")
-        st.metric("Você", round(user_val,1))
-        st.metric("Média", round(pop_mean,1))
-        st.progress(user_val / 100)
+
+        c1, c2 = st.columns(2)
+        c1.metric("Você", round(user_val, 1))
+        c2.metric("Média", round(pop_mean, 1))
+
+        st.progress(min(max(user_val / 100, 0), 1))
 
 else:
-    st.info("Benchmark aparecerá após acumular dados.")
-
-
-
-
+    st.info("Benchmark aparecerá após acumular dados suficientes.")
