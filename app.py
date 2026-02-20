@@ -195,31 +195,22 @@ if st.session_state.scores is None:
 s = st.session_state.scores
 name = st.text_input("Nome", "Participante")
 
-# SAVE APENAS UMA VEZ E SOMENTE SE NÃO FOR 50 FALSO
-if st.session_state.step == TOTAL_STEPS:
-
-    scores = {}
-
-    for p in QUESTIONS:
-
-        vals = []
-
-        for qid, _, rev in QUESTIONS[p]:
-
-            v = int(st.session_state.get(qid, 3))
-
-            if rev:
-                v = 6 - v
-
-            vals.append(v)
-
-        raw = sum(vals) / len(vals)
-        scores[p] = round((raw - 1) / 4 * 100, 1)
-
-    st.session_state.scores = scores:
+# -----------------------------------------------------
+# SAVE — APENAS UMA VEZ E SOMENTE NO FINAL REAL
+# -----------------------------------------------------
+if (
+    st.session_state.step == TOTAL_STEPS
+    and not st.session_state.saved
+    and s is not None
+    and sum(s.values()) != 250   # evita salvar score neutro falso
+):
     save_result(name, s)
     st.session_state.saved = True
 
+
+# =====================================================
+# EXECUTIVE PROFILE
+# =====================================================
 
 st.header("Executive Profile")
 
@@ -227,8 +218,7 @@ cols = st.columns(5)
 
 for i, k in enumerate(["O","C","E","A","N"]):
     val = s[k] if k != "N" else 100 - s[k]
-    cols[i].metric(k, round(val,1))
-
+    cols[i].metric(k, round(val, 1))
 
 # =====================================================
 # MATRIZ ESTRATÉGICA
