@@ -22,7 +22,10 @@ if "scores" not in st.session_state:
 if "saved" not in st.session_state:
     st.session_state.saved = False
 
-if "init_sliders" not in st.session_state:
+
+# =====================================================
+# QUESTIONÁRIO (PERSISTÊNCIA NATIVA DO STREAMLIT)
+# =====================================================
 
 if st.session_state.step < TOTAL_STEPS:
 
@@ -35,7 +38,7 @@ if st.session_state.step < TOTAL_STEPS:
             label=text,
             min_value=1,
             max_value=5,
-            value=st.session_state.get(qid, 3),
+            value=st.session_state.get(qid, 3),   # default seguro
             key=qid
         )
 
@@ -50,9 +53,6 @@ if st.session_state.step < TOTAL_STEPS:
         st.session_state.step += 1
         st.session_state.saved = False
         st.rerun()
-    
-    st.session_state.init_sliders = True
-
 
 # =====================================================
 # GOOGLE LOW READ ARCHITECTURE
