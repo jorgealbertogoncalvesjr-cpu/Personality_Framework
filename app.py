@@ -148,8 +148,9 @@ TOTAL_STEPS = 5
 
 st.progress(st.session_state.step / TOTAL_STEPS)
 
+
 # =====================================================
-# QUESTIONÁRIO COM PERSISTÊNCIA REAL
+# QUESTIONÁRIO COM PERSISTÊNCIA CORRETA (STREAMLIT)
 # =====================================================
 
 if st.session_state.step < TOTAL_STEPS:
@@ -159,19 +160,17 @@ if st.session_state.step < TOTAL_STEPS:
 
     for qid, text, _ in QUESTIONS[p]:
 
-        # garante inicialização única
+        # inicializa apenas se não existir
         if qid not in st.session_state:
             st.session_state[qid] = 3
 
-        val = st.slider(
+        st.slider(
             text,
             min_value=1,
             max_value=5,
-            value=st.session_state[qid],   # <<< ESSENCIAL
-            key=qid
+            value=st.session_state[qid],
+            key=qid   # Streamlit controla automaticamente
         )
-
-        st.session_state[qid] = val   # <<< garante persistência
 
     c1, c2 = st.columns(2)
 
