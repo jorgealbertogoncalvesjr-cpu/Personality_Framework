@@ -115,17 +115,27 @@ except Exception as e:
     st.sidebar.code(str(e))
 
 
-@st.cache_data(ttl=300)
+@st.cache_data(ttl=900, show_spinner=False)
 def load_population():
+
     if not google_ok or sheet is None:
         return pd.DataFrame()
+
     try:
         df = pd.DataFrame(sheet.get_all_records())
+
         for c in ["O","C","E","A","N"]:
             if c in df.columns:
                 df[c] = pd.to_numeric(df[c], errors="coerce")
+
         return df
-    except:
+
+    except Exception as e:
+
+        if "Quota exceeded" in str(e):
+            st.warning("Google quota temporariamente excedida. Usando cache local.")
+            return st.session_state.get("df_pop", pd.DataFrame())
+
         return pd.DataFrame()
 
 
@@ -320,7 +330,10 @@ else:
 
 st.markdown("### Population Benchmark")
 
-df_pop = load_population()
+if "df_pop" not in st.session_state:
+    st.session_state.df_pop = load_population()
+
+df_pop = st.session_state.df_pop
 
 if not df_pop.empty and len(df_pop) > 5:
 
@@ -446,7 +459,10 @@ else:
 
 st.markdown("### Benchmark vs Population")
 
-df_pop = load_population()
+if "df_pop" not in st.session_state:
+    st.session_state.df_pop = load_population()
+
+df_pop = st.session_state.df_pop
 
 if not df_pop.empty and len(df_pop) > 5:
 
@@ -478,7 +494,10 @@ else:
 
 st.markdown("### Benchmark vs Population")
 
-df_pop = load_population()
+if "df_pop" not in st.session_state:
+    st.session_state.df_pop = load_population()
+
+df_pop = st.session_state.df_pop
 
 if not df_pop.empty and len(df_pop) > 5:
 
